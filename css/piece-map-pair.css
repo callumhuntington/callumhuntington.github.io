@@ -1,0 +1,43 @@
+/* --- a city shown at two scales -------------------------------------------
+
+   Sheffield's recommendations are 5 km apart north to south but nine of them
+   sit inside one square kilometre of the centre. At 32rem that centre is a
+   single red blob: 8.5 metres per rendered pixel, and a pin is 24 of them, so
+   two places under 200 m apart cannot be told apart. No crop fixes it — a
+   frame tight enough to separate the centre loses Hillsborough entirely.
+
+   So: two frames. The wider one carries a rectangle showing where the closer
+   one looks, drawn into the SVG at build time so it scales with the picture.
+   A place inside that rectangle is pinned on the closer map only, never both.
+
+   .piece-map is still the positioning context for the page; the pins now
+   resolve against .map-frame instead. */
+.piece-map-pair {
+  display: flex;
+  gap: calc(var(--reveal) * 2);
+  align-items: flex-start;
+}
+
+.map-frame {
+  position: relative;
+  /* flex-grow set to each frame's own aspect ratio, with a zero basis: widths
+     then come out proportional to width/height, which is what makes both
+     images render at exactly the same height. Rebuild a frame at a different
+     shape and these two numbers have to follow it — the build script prints
+     the ratio it used. */
+  flex: 0.737 1 0;
+  min-width: 0;
+}
+
+.map-frame-centre { flex-grow: 0.658; }
+
+/* Below the point where two frames each become narrower than about 15rem, the
+   pair stops earning its place: halving the width halves the magnification,
+   and the closer map stops being closer. Stacked, both get the full measure. */
+@media (max-width: 34rem) {
+  .piece-map-pair {
+    flex-direction: column;
+    gap: calc(var(--reveal) * 2.5);
+  }
+  .map-frame { flex: none; width: 100%; }
+}
