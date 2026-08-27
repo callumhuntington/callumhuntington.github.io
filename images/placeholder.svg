@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" role="img" aria-label="placeholder">
+  <!-- TEMPORARY. Delete with the draft entries in miscellany.html. -->
+  <rect width="300" height="200" fill="#e2ddd3"/>
+  <rect x="112" y="62" width="76" height="76" rx="8"
+        fill="none" stroke="#c4362b" stroke-width="6"/>
+</svg>
