@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>miscellany — preview</title>
+<style>
+/* The webfont. Without this, 'Orbita Traced' only resolves on a machine
+   where the .otf happens to be installed locally — everyone else silently
+   gets the sans-serif fallback. Path is relative to this file: style.css
+   sits in /css/, so ../fonts/ is /fonts/ at the site root. */
+/* Body face, self-hosted alongside Orbita. Subset to Latin, variable across
+   weights 300-500 so --weight-body remains a live choice. */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../fonts/DMSans-latin.woff2') format('woff2');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../fonts/DMSans-Italic-latin.woff2') format('woff2');
+  font-weight: 300 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Orbita Traced';
+  src: url('../fonts/OrbitaTraced.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-display: 'Orbita Traced', sans-serif;
+
+  /* DM Sans, loaded from Google Fonts in each page's <head>. The fallbacks
+     are real faces rather than the generic sans, so a failed font request
+     degrades to something reasonable instead of to Arial.
+     DM Sans runs 100-1000, so --weight-body is a genuine choice here: 400 is
+     the setting we picked; 300 is available if it ever reads too heavy. */
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --weight-body: 400;
+
+  --weight-display: 400; /* Orbita has one weight only — don't ask it for 300 */
+
+  /* Type scale. clamp(minimum, preferred, maximum): the middle value grows
+     with the viewport, the outer two stop it running away at either end.
+     The rem component is what makes these respect a reader's browser font
+     size — pure vw sizing ignores it completely. */
+  /* These reproduce the old calc(Nvw + Nvh) values at the two widths you
+     judged them on — ~11px phone / ~21px laptop for the lede — but as a
+     rem + vw ramp, so they no longer depend on window HEIGHT and no longer
+     run away on a large monitor. The floor only engages below ~360px. */
+  --size-caption: clamp(0.42rem, 0.28rem + 0.58vw, 0.90rem);
+  --size-small:   clamp(0.55rem, 0.39rem + 0.79vw, 1.10rem);
+  --size-body:    clamp(0.55rem, 0.39rem + 0.79vw, 1.20rem);
+  --size-lede:    clamp(0.66rem, 0.46rem + 0.95vw, 1.45rem);
+  --size-nav:     clamp(1.10rem, 0.98rem + 0.50vw, 1.70rem);
+  --size-h2:      clamp(1.80rem, 1.45rem + 1.45vw, 3.10rem);
+
+  /* One accent, one radius, one speed — the three things that make a set of
+     parts read as a system rather than as separate decisions. */
+  --accent:      #c4362b;   /* warm red. 5.4:1 on white, so it is safe as link
+                               text. Do not swap in #ff8000: only 2.5:1. */
+  --accent-dark: #9c2a21;   /* hover */
+  --band:        #f4f1ea;   /* nav strip */
+  --rule:        #e2ddd3;   /* hairlines */
+
+  --shell:       6px;       /* thickness of the window surround */
+  --reveal:      6px;       /* gap between the surround and what sits inside */
+  /* The inner radius of a border is always the outer radius MINUS the border
+     width, so --radius has to exceed --shell + --reveal or the inside corners
+     come out square. 16 - 6 - 6 leaves 4px of curve on the photo itself. */
+  --radius:      16px;
+  --measure:     85%;       /* shared column width: mathematics modules and
+                               the landing photograph, so they line up */
+  --reveal-color: #ffffff;  /* what shows in the gap inside a window */
+  --ink:         #000000;   /* nav labels, and the social buttons with them */
+  --speed:       280ms;
+  --ease:        ease;
+}
+
+/* Links take the accent everywhere. The nav and the social icons set their own
+   colour and are more specific, so they are unaffected. */
+a {
+  color: var(--accent);
+  transition: color var(--speed) var(--ease);
+}
+
+a:hover {
+  color: var(--accent-dark);
+}
+
+/* A section of the mathematics page as a module: content sitting inside a
+   coloured shell with a window cut into it, same construction as a gallery
+   tile so the two pages share a family trait. */
+.module {
+  border: var(--shell) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.6rem 1.3rem 1.8rem;
+  margin-bottom: 1.6rem;
+  /* The same white the map frames reveal inside their shell. A window on this
+     site shows something behind the wall; the warm ground is the wall, and a
+     window onto more of it was never really a window. */
+  background-color: var(--reveal-color);
+}
+
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    /* No font-family here. A universal selector applies it directly to every
+       element, which beats anything inherited from body. Set it below instead. */
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  /* Never scroll sideways. clip is preferred because, unlike hidden, it does
+     not turn the element into a scroll container; hidden is the fallback for
+     older browsers. This is a safety net — the cause still gets fixed. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  font-family: var(--font-body);
+  font-weight: var(--weight-body);
+  line-height: 1.55;
+  background-color: var(--band);   /* same ground as the nav strip */
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* not 100vh */
+}
+
+.backgroundimage {
+  flex: 7; /* 70% of the wrapper */
+}
+
+.content {
+  flex: 3; /* 30% of the wrapper */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Landing masthead. Delete this rule and its element in index.html if you
+   would rather the page opened straight onto the photograph. */
+.masthead {
+    flex: 0 0 auto;
+    padding: 0 1rem;
+    /* Orbita is caps-only, but its line box still reserves 0.22em below the
+       baseline for descenders it never draws — so the element sits taller than
+       the letters look. Cancelling most of that evens the gap above the photo
+       against the one below it, and the freed space goes to the picture. */
+    margin-bottom: -0.1em;
+    font-family: var(--font-display);
+    font-weight: var(--weight-display);
+    font-size: clamp(2rem, 7.5vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: #1a1a1a;
+}
+
+/* The nav is fixed, so the page has to clear it. This used to sit on the
+   masthead; now the masthead is inside a column it belongs on the wrapper. */
+body.landing .page-wrapper {
+    padding-top: 13vh;
+}
+
+/* Only for landing page */
+body.landing, html.landing {
+    height: 100%;
+    margin: 0;
+    /* No vertical scrolling on this page, ever. The photograph below is the
+       only flexible element, so it absorbs whatever space is left over and
+       the page always measures exactly one screen. */
+    overflow: hidden;
+}
+
+body.landing .backgroundimage {
+    /* Now just a slot that centres the photograph. It takes whatever vertical
+       space is left over, and the picture fits itself inside. */
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(var(--shell) + var(--reveal));   /* room for the frame rings */
+}
+
+/* <picture> is a wrapper with no box of its own to speak of. Left as a normal
+   element it would sit between .backgroundimage and the image, and the img's
+   max-height:100% would measure against IT — an auto height, which makes the
+   percentage resolve to nothing. display:contents removes it from layout so
+   the img stays a direct flex child of the slot. */
+picture {
+    display: contents;
+}
+
+.landing-photo {
+    display: block;
+    /* Both maxima, no width or height: a replaced element shrinks to satisfy
+       whichever binds while keeping its own proportions. So the whole picture
+       is always visible and never distorted, at the largest size that fits. */
+    max-width: var(--measure);
+    max-height: 100%;
+    width: auto;
+    height: auto;
+
+    /* No minimum on either axis, and there cannot be one here.
+
+       A replaced element keeps its proportions only while it is free to. Two
+       maxima leave it free: whichever binds first stops the growth and the
+       other is slack. Add a minimum on one axis against a maximum on the
+       other and both must be satisfied at once — a width of at least this and
+       a height of at most that — and the only way to do it is to abandon the
+       aspect ratio. That is the squash: not a small photograph but a stretched
+       one, which is worse.
+
+       If the portrait comes out too small, the height it is given is the thing
+       to change — the masthead, the paragraph, the footer — not a floor under
+       the picture. */
+    border-radius: max(0px, calc(var(--radius) - var(--shell) - var(--reveal)));
+
+    /* The window as two shadow rings rather than border + padding. Shadows sit
+       outside layout, so the image is still free to size itself — and each
+       ring's corner radius grows with its spread, which keeps the three curves
+       concentric with no arithmetic. */
+    box-shadow:
+        0 0 0 var(--reveal) var(--reveal-color),
+        0 0 0 calc(var(--reveal) + var(--shell)) var(--accent);
+}
+
+body.landing .content {
+    flex: 1 1 0;        /* holds the photo, the text and the socials */
+    min-height: 0;
+    align-items: stretch;
+}
+
+/* Photo and paragraph. A column on phones — photo above text, exactly as
+   before — and a row on a wide screen, where the leftover space is horizontal
+   rather than vertical. */
+.landing-body {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    max-width: 72rem;      /* stop the whole block spanning a wide window */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;          /* equal air above and below the photograph, so the
+                              text cannot end up pressed against its frame */
+}
+
+/* On a short window the fixed parts alone can fill the screen, which would
+   leave the photograph nothing and start clipping the text. Trimming the
+   masthead and the footer buys the picture room back. */
+@media (max-height: 620px) {
+    body.landing .page-wrapper { padding-top: 11.5vh; }
+    .masthead {
+        font-size: clamp(1.5rem, 5vw, 2.6rem);
+        padding-bottom: 0;
+    }
+    body.landing .content { padding: 0.4rem; }
+    body.landing .socials { height: 11vh; }
+}
+
+.nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;                 /* was 0.66vh, which pushed a 100%-wide bar
+                                a few pixels past the right edge */
+    width: 100%;
+    height: 10vh;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    z-index: 100;
+    background-color: var(--band);
+    border-bottom: 1px solid var(--rule);
+    transition: background-color var(--speed) var(--ease);
+}
+
+/* space-evenly gives equal GAPS, not equal COLUMNS. With three labels of
+   different widths that puts "mathematics" a little left of the page centre,
+   so the masthead below it — which is genuinely centred — looks misaligned.
+   Equal-width columns with centred text put the middle label dead centre. */
+.nav-bar .nav-link {
+    flex: 1 1 0;
+    align-self: stretch;     /* full height, so the dividers run the whole
+                                depth of the band and meet the rule below */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-bar .nav-link + .nav-link {
+    border-left: 1px solid var(--rule);
+}
+
+/* app.js adds .scrolling past 5% of the viewport height. The band already has
+   a ground, so this holds it steady rather than flashing to white. */
+.nav-bar.scrolling {
+    background-color: var(--band);
+    transition: background-color var(--speed) var(--ease);
+}
+
+.nav-bar a {
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-weight: var(--weight-display);
+    letter-spacing: 0.04em;
+    font-size: var(--size-nav);
+    transition: color var(--speed) var(--ease);
+}
+
+.nav-bar a:hover {
+    text-decoration: underline;
+    color: black;
+}
+
+.nav-bar a.scrolling {
+    color: #6e6e6e;
+    transition: color var(--speed) var(--ease);
+}
+
+/* Marks the page you are on. Same specificity as .scrolling above, so it has
+   to come after it to win when both apply. The !important that used to be on
+   .scrolling was unnecessary and would have blocked this. */
+.nav-bar a[aria-current="page"] {
+    color: var(--accent);
+}
+
+.gapfillphoto {
+    display: flex;
+    flex-direction: column;
+    height: 7vh;    /* two of these clear the 10vh nav and leave 4vh of air */
+}
+
+.aboutprojectcontainer {
+    align-items: center;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    width: 90%;
+    margin: 0 auto;
+    /* Was height: 50%, left over from the original layout. As a flex item that
+       reserved half of .landing-body for the text no matter how short it was,
+       and the photograph could only have what remained. Sizing to content hands
+       that space back to the picture. */
+    height: auto;
+}
+
+/* The shared column, for any page that is a stack of modules — the
+   mathematics page, the 404. Was .mathematicscontainer, which named the one
+   page that happened to use it first rather than what it does. */
+.column {
+    display: flex;
+    flex-direction: column;      /* stack the modules vertically */
+    text-align: center;
+    justify-content: flex-start; /* let content start from top */
+    width: var(--measure);
+    margin: auto;
+    height: auto;                /* let content determine height */
+}
+
+.projectpara {
+    font-weight: var(--weight-body);
+    /* The shared lede curve, but stopped at 1.15rem rather than 1.45rem. The
+       paragraph is four times the length it was written for, and this column
+       does not widen past 72rem — so above about 1150px the type was growing
+       into a fixed box, adding lines faster than the layout could find height
+       for them, until the text ran under the socials. Held here, the wide
+       window gets the same reading size as a 1000px one and simply more of
+       the picture. */
+    font-size: clamp(0.66rem, 0.46rem + 0.95vw, 1.15rem);
+    width: 100%;
+    max-width: 34rem;    /* ~60 characters. It was running to about 90, which
+                            is what made the wide layout read as a slab and the
+                            photo look undersized next to it. */
+    margin: 0 auto;
+    color: var(--ink);   /* same as the nav labels and the social buttons */
+}
+
+.socials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 15vh;
+    width: 100%;
+    max-width: 100%;
+}
+
+.socials ul {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    list-style: none;
+}
+
+.socials ul li {
+    margin: 0 10px;
+}
+
+.socials ul li a {
+    display: flex;               /* flex ensures perfect centering */
+    justify-content: center;     /* horizontal center */
+    align-items: center;         /* vertical center */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    text-align: center;
+    background-color: var(--ink);
+    box-shadow: 0px 7px 5px rgba(0, 0, 0, 0.5);
+    font-size: 22px;             /* adjust icon size */
+    text-decoration: none;       /* these are links, so they were picking up
+                                    an underline beneath the glyph on hover */
+    transition: transform var(--speed) var(--ease),
+                background-color var(--speed) var(--ease);
+}
+
+.socials ul li a:hover {
+    background-color: var(--accent);   /* the whole disc fills */
+    transform: translateY(-10px);      /* and lifts, as before */
+}
+
+.socials ul li .fa, 
+.socials ul li .fa-brands {
+    color: white;
+    line-height: 1;               /* ensures vertical alignment */
+}
+
+/* Brand colours removed: four saturated hues were fighting the single accent.
+   All four now take --ink, the same colour as the nav labels. */
+
+/* Defaults only. This rule used to set height: 50%, width: 70%, object-fit and
+   a border-radius on EVERY image on the site, which is a size decision made in
+   the wrong place: the landing photograph, the atlas cards and the lightbox
+   each had to undo it before they could size themselves, and `height` in
+   particular silently disabled aspect-ratio on the cards. Anything that wants
+   a specific size now asks for it where it lives. */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* --- mathematics section --- */
+/* A module's heading. Keyed to the module rather than to #mathematics, so a
+   window is a window wherever one is used and a new page inherits the whole
+   construction — shell, reveal, Orbita heading — from two class names. */
+.module h2 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: var(--size-h2);
+  margin: 0 0 0.6em;
+  text-align: center;
+}
+
+/* Plain prose inside a window. The lists set their own measure; this is for
+   modules that are simply a paragraph. */
+.module p {
+  max-width: 34rem;    /* ~60 characters, same as the landing lede */
+  margin: 0 auto;
+  font-size: var(--size-body);
+}
+
+/* Lists inside mathematics */
+.education, .publications, .underreview, .inpreparation, .conferences {
+    list-style: none;
+    padding: 0;
+    margin: 12px auto;
+    display: block;
+    width: 100%;
+    text-align: left;
+    max-width: 100%;
+}
+
+.education li, .publications li, .underreview li, .inpreparation li, .conferences li {
+  margin: 12px auto;
+  font-size: var(--size-body);
+  line-height: 1.6;
+}
+
+/* Paper/degree rows */
+.paper-row {
+  display: flex;
+  align-items: flex-start;     /* align icon to top of text */
+  justify-content: space-between; /* push content apart if needed */
+  width: 100%;
+}
+
+.paper-row i {
+  flex: 0 0 30px;             /* fixed width column for icon */
+  text-align: center;
+  margin-right: 10px;
+  color: #333;
+  font-size: 1em;
+  line-height: 1.6;
+  align-self: flex-start;     /* icon sticks to top of first text line */
+}
+
+.paper-text {
+  flex: 1;                    /* take remaining space */
+  text-align: justify;        /* evenly align text across row */
+  white-space: normal;        /* allow wrapping */
+  -webkit-hyphens: auto;      /* Safari, including iOS, still needs the prefix */
+  hyphens: auto;              /* break points inside long words, so justifying
+                                 has something to work with besides word gaps */
+}
+
+.paper-text a {
+  white-space: normal;   /* allow wrapping */
+  word-break: break-word; /* ensures very long URLs can wrap */
+}
+
+/* Education rows */
+.education-row {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin: 10px auto;
+  font-size: var(--size-body);
+}
+
+.education-row i {
+  flex: 0 0 30px;       /* fixed column for icon */
+  text-align: center;
+  margin-right: 10px;   /* spacing between icon and text */
+  color: #333;
+  font-size: 1em;
+  line-height: 1.6;
+  align-self: flex-start;
+}
+
+.education-left {
+  flex: 1;                      /* take up remaining space */
+  display: flex;
+  flex-direction: column;        /* stack degree above university */
+  text-align: left;
+}
+
+.education-left .degree {
+  font-weight: var(--weight-body);
+}
+
+.education-left .university {
+  font-weight: var(--weight-body);
+  font-style: italic;            /* optional styling for distinction */
+  color: #6e6e6e;
+}
+
+.education-right {
+  white-space: nowrap;
+  margin-left: auto;             /* push to far right */
+  text-align: right;
+}
+
+/* --- the pieces grid ------------------------------------------------------
+   Two columns of photographs, used by miscellany.html. Opening one reveals a
+   panel with its title and note in the slot beside it — rightwards from the
+   left column, leftwards from the right — and the text aligns to the same side
+   as its own photograph, so a pair reads like two facing pages.
+
+   "Open" is a pointer hover where there is one, and the .is-open class where
+   there is not; the selector lists below always carry all three states. The
+   class sits on .piece rather than on the sheet so the close button, which has
+   to be a SIBLING of the sheet, can be styled from it. A <button> inside an
+   <a> is not valid HTML, which is the only reason the two are not nested.
+
+   The panel is ABSOLUTE and the tile keeps its cell. Widening the grid item
+   itself would push its neighbour to the next row and reflow everything below,
+   and a tile that moves out from under the cursor un-hovers itself, reflows
+   back, and flickers. Out of flow nothing moves: the sheet simply overhangs
+   its cell and is painted above the neighbour. */
+
+.pieces {
+  list-style: none;
+  padding: 0;
+  /* A cap of its own. .column is 85% of the window with no ceiling, so on a
+     wide monitor four columns would give a 30rem tile — a thumbnail the size
+     of a photograph. 72rem is the same number the landing block uses to stop
+     spanning a wide window, and at four columns it gives an 18rem tile. */
+  max-width: 72rem;
+  margin: 1.2rem auto 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--tile-gap, 1rem);
+  /* The opened sheet and its ring overhang the cell, so this must not clip. */
+  overflow: visible;
+}
+
+.piece {
+  position: relative;
+  aspect-ratio: 1 / 1;
+}
+
+/* What actually moves. Pinned to the cell when closed, twice as wide plus the
+   gutter when open, so it lands exactly on the neighbour's far edge. */
+.piece-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: var(--reveal-color);
+  text-decoration: none;
+  /* The shell, drawn as a spread shadow rather than a border. A border would
+     be part of the box and would push the photograph inwards by 6px as it
+     appeared; a spread is painted outside the box and costs no layout at all.
+     Zero-width when closed so it has something to grow from. It reaches 6px
+     into a 16px gutter, so it never touches the neighbour's edge. */
+  box-shadow: 0 0 0 0 var(--accent);
+  transition: width var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease);
+}
+
+/* Right-hand column opens the other way: anchored to its right edge, with the
+   photograph on the right and the panel to its left.
+
+   Keyed to nth-child, which works for ANY EVEN number of columns and for no
+   odd one. At two columns the odd children are column 1 and the even ones
+   column 2; at four they are columns 1 and 3 against 2 and 4, and each pair
+   still opens into its own partner. At three, the middle column has no fixed
+   side and the whole scheme collapses. Worth knowing before adding a
+   breakpoint. */
+.piece:nth-child(even) .piece-sheet {
+  left: auto;
+  right: 0;
+  flex-direction: row-reverse;
+}
+
+/* Above its neighbours whenever it is open — including the ones later in
+   source order, which would otherwise paint over it.
+
+   The hover target is the PHOTOGRAPH, not the sheet. If the whole sheet held
+   it open, moving right onto the panel would keep the neighbour covered, and
+   the neighbour is a photograph somebody is trying to look at. Leaving the
+   picture gives it straight back.
+
+   This is safe from oscillation only because the photograph does not move: its
+   box is identical open and closed, so crossing into the panel cannot bounce.
+   Were it to slide or resize, the pointer would leave it, the sheet would
+   close, the pointer would be back on it, and it would flicker.
+
+   :has() rules are kept in their OWN blocks rather than joined to the lists
+   below. An unsupported selector invalidates a whole comma list, so sharing
+   one would take the keyboard and touch states down with it on an old
+   browser instead of just losing hover. */
+.piece-sheet:focus-visible,
+.piece.is-open .piece-sheet {
+  width: calc(200% + var(--tile-gap, 1rem));
+  z-index: 3;
+  box-shadow: 0 0 0 var(--shell) var(--accent);
+}
+
+.piece-sheet:has(.piece-shot:hover) {
+  width: calc(200% + var(--tile-gap, 1rem));
+  z-index: 3;
+  box-shadow: 0 0 0 var(--shell) var(--accent);
+}
+
+/* The photograph. Held at exactly the closed width so it does not move,
+   stretch or reframe as the sheet opens; only the panel beside it appears.
+   Half of (200% + gap) is one tile plus half a gutter, so the gap comes off. */
+.piece-shot {
+  flex: 0 0 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background-color: var(--rule);   /* shows while the file loads */
+  transition: flex-basis var(--speed) var(--ease);
+}
+
+.piece-sheet:focus-visible .piece-shot,
+.piece.is-open .piece-shot {
+  flex-basis: calc(50% - var(--tile-gap, 1rem) / 2);
+}
+
+.piece-sheet:has(.piece-shot:hover) .piece-shot {
+  flex-basis: calc(50% - var(--tile-gap, 1rem) / 2);
+}
+
+/* The text. Zero-width and invisible until the sheet opens. */
+.piece-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  padding: 0;
+  opacity: 0;
+  /* Fades in slightly behind the opening edge, so the panel is revealed rather
+     than found already sitting there. */
+  transition: opacity calc(var(--speed) * 0.7) var(--ease) calc(var(--speed) * 0.4),
+              padding var(--speed) var(--ease);
+}
+
+/* The mirror. A right-column card reads outwards from its photograph, in the
+   same direction its sheet opened. */
+.piece:nth-child(even) .piece-panel {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.piece-sheet:focus-visible .piece-panel,
+.piece.is-open .piece-panel {
+  opacity: 1;
+  padding: 1rem 1.2rem;
+}
+
+.piece-sheet:has(.piece-shot:hover) .piece-panel {
+  opacity: 1;
+  padding: 1rem 1.2rem;
+}
+
+.piece-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: calc(var(--size-h2) * 0.62);
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 0.5em;
+}
+
+.piece-note {
+  font-size: calc(var(--size-body) * 0.94);
+  line-height: 1.5;
+  color: #4a4a4a;
+}
+
+.piece-meta {
+  margin-top: 0.7em;
+  font-size: calc(var(--size-body) * 0.85);
+  font-style: italic;
+  color: #6e6e6e;
+}
+
+/* The sheet is the link, so it takes the whole tile. Its title turns accent
+   rather than picking up an underline. */
+.piece-sheet:focus-visible .piece-title,
+.piece.is-open .piece-title { color: var(--accent); }
+
+.piece-sheet:has(.piece-shot:hover) .piece-title { color: var(--accent); }
+
+/* Sits outside the shell, or the two rings would be indistinguishable. */
+.piece-sheet:focus-visible {
+  outline: 2px dashed var(--ink);
+  outline-offset: calc(var(--shell) + 3px);
+}
+
+/* The close button. Only exists where there is no hover to leave. It sits in
+   the OUTER corner of the opened sheet — top right for a left-column card, top
+   left for a right-column one — so it is always at the far end of the panel
+   and never over the photograph.
+
+   Positioned against .piece, which is one tile wide, so the far edge of an
+   opened sheet is one tile plus a gutter beyond it. Hence -100%. */
+.piece-close {
+  display: none;
+  position: absolute;
+  z-index: 4;
+  top: 0.5rem;
+  right: calc(-100% - var(--tile-gap, 1rem) + 0.5rem);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: var(--band);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.piece:nth-child(even) .piece-close {
+  right: auto;
+  left: calc(-100% - var(--tile-gap, 1rem) + 0.5rem);
+}
+
+.piece.is-open .piece-close { display: block; }
+
+/* Two columns before a panel gets too narrow to hold a title. Still an EVEN
+   count, so the mirror survives the change — see the nth-child note above. */
+@media (max-width: 900px) {
+  .pieces { grid-template-columns: 1fr 1fr; }
+}
+
+/* Touch. The grid, the mirror and the opening are all unchanged; only the
+   trigger is — a first tap opens, a second follows the link, and the × closes.
+   See js/miscellany.js. What changes here is the type, which has to come down:
+   a panel is half a tile wide, and half a tile on a phone is not much. */
+@media (hover: none), (max-width: 600px) {
+  .piece-title { font-size: calc(var(--size-h2) * 0.5); margin-bottom: 0.35em; }
+  .piece-note  { font-size: calc(var(--size-body) * 0.82); line-height: 1.4; }
+  .piece-meta  { margin-top: 0.45em; font-size: calc(var(--size-body) * 0.75); }
+
+  .piece.is-open .piece-panel { padding: 0.7rem 0.8rem; }
+  .piece-sheet:has(.piece-shot:hover) .piece-panel { padding: 0.7rem 0.8rem; }
+
+  .piece-close { width: 26px; height: 26px; font-size: 17px; top: 0.35rem; }
+  .piece-close                        { right: calc(-100% - var(--tile-gap, 1rem) + 0.35rem); }
+  .piece:nth-child(even) .piece-close { left:  calc(-100% - var(--tile-gap, 1rem) + 0.35rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece-sheet, .piece-shot, .piece-panel { transition: none; }
+}
+
+/* --- a written piece ------------------------------------------------------
+   The essay pages behind the miscellany tiles. Two things have to be undone
+   for long prose: .column centres its text, which is right for a stack of
+   short modules and wrong for six hundred words, and .module p sets its own
+   34rem measure, which would apply per-paragraph rather than to the column.
+   Same specificity as .module p — (0,1,1) — so this block has to come after
+   it, which it does. */
+.prose {
+  /* Half again the 34rem used elsewhere on the site. That is about 88
+     characters rather than 60 — wide for reading, which is why the
+     justification and hyphenation below are not optional here. */
+  max-width: 50rem;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.prose p {
+  max-width: none;     /* the measure is now the parent's job */
+  margin: 0 0 1.1em;
+  font-size: var(--size-body);
+  /* Justified to match the paper rows on the mathematics page. Justification
+     without hyphenation opens rivers of white space at this measure, so the
+     two always travel together. Safari still needs the prefix. */
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.prose p:last-child { margin-bottom: 0; }
+
+/* Section headings inside a piece. A whole new window per section was too much
+   furniture for what is one continuous read, so an essay is one module and its
+   parts are marked by the display face alone. Centred, like every other
+   heading on the site; the space above is what separates the sections now that
+   there is no border doing it. */
+.prose h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: calc(var(--size-h2) * 0.72);
+  text-align: center;
+  margin: 2.4em 0 0.9em;
+}
+
+/* The photograph at the head of a piece. Sits INSIDE .prose, so it takes the
+   text measure rather than the module's full width — a lead image wider than
+   the column it introduces makes the text look like a caption. Cropped to 3:2
+   whatever the file is; a square lead under a title reads as an avatar. */
+.piece-lead {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  /* --radius less the shell and reveal: the curve a photograph carries when
+     it sits inside a window elsewhere on the site. */
+  border-radius: calc(var(--radius) - var(--shell) - var(--reveal));
+  margin: 0 0 1.4rem;
+  background-color: var(--rule);
+}
+
+.piece-dateline {
+  display: block;
+  text-align: center;
+  font-style: italic;
+  color: #6e6e6e;
+  font-size: calc(var(--size-body) * 0.9);
+  margin: -0.3em 0 1.3rem;
+}
+
+.piece-back {
+  display: block;
+  text-align: center;
+  font-size: calc(var(--size-body) * 0.9);
+  margin: 0 0 1.4rem;
+}
+
+/* --- a recommendations page -----------------------------------------------
+   Same construction as a written piece, but each subsection gets its own
+   window: a city page is scanned rather than read straight through, and a
+   border is a stronger signal than white space for "you can stop here".
+
+   Which is also why it needs a jump list. */
+
+/* The mini nav at the head of the page. Middot separators, the same device the
+   publications use for their DOI and PDF links, so a reader who has been on
+   the mathematics page already knows what it means. */
+.jump {
+  max-width: 50rem;
+  margin: 1.3rem auto 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  /* Level with the section headings it points at. Orbita is caps-only, so it
+     carries this size without shouting the way a body face would. */
+  font-size: var(--size-h2);
+  letter-spacing: 0.02em;
+  line-height: 2;
+}
+
+.jump a { white-space: nowrap; }
+
+.jump .sep {
+  margin: 0 0.55em;
+  color: #6e6e6e;
+  /* Decorative: it separates links rather than saying anything, so a screen
+     reader announcing "middot" seven times would be noise. */
+}
+
+/* Where an anchor jump lands. The nav is fixed at 10vh, so without this every
+   target would arrive underneath it — the heading hidden and the first line of
+   the list looking like the top of the section. */
+.module[id] { scroll-margin-top: calc(10vh + 1.2rem); }
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* The list inside a subsection. The same skeleton as the paper rows on the
+   mathematics page — fixed icon column, flexible text — because it is the same
+   shape: a marker, a name, and a line about it. */
+.spots {
+  counter-reset: spot;
+  list-style: none;
+  padding: 0;
+  margin: 12px auto;
+  width: 100%;
+  max-width: 50rem;   /* the same measure as the strip above it and the prose */
+  text-align: left;
+}
+
+.spots li { counter-increment: spot; }
+
+.spot {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin: 16px auto;
+  font-size: var(--size-body);
+  line-height: 1.6;
+}
+
+.spot i {
+  flex: 0 0 30px;
+  text-align: center;
+  margin-right: 10px;
+  color: #333;
+  font-size: 1em;
+  line-height: 1.6;
+  align-self: flex-start;
+}
+
+.spot-text {
+  flex: 1;
+  min-width: 0;      /* let a long name wrap instead of overflowing */
+  text-align: left;
+}
+
+.spot-name {
+  font-weight: var(--weight-body);
+}
+
+.spot-note {
+  display: block;
+  font-style: italic;
+  color: #6e6e6e;
+}
+
+
+/* The strip at the head of a subsection: one photograph per suggestion, in the
+   same order as the list below it, each carrying a numbered disc that matches
+   the one on its row. Same device the atlas uses on its narrow layout, for the
+   same reason — a photograph and its entry separated by layout need something
+   saying which is which.
+
+   Both numbers come from CSS counters rather than from the markup, so they
+   cannot drift: insert a suggestion in the middle and the strip and the list
+   renumber together. The correspondence is still positional, so a strip is all
+   of them or none, never some.
+
+   grid-auto-flow: column with 1fr tracks means the count is taken from the
+   number of children. Three photographs or five, no class to change. */
+.shots {
+  counter-reset: shot;
+  list-style: none;
+  padding: 0;
+  /* The same 50rem measure .prose uses, centred. .column is 85% of the window
+     with no ceiling, and three PORTRAIT photographs across an uncapped module
+     on a wide monitor come out taller than the screen. Everything inside a
+     window now sits within one measure. */
+  max-width: 50rem;
+  margin: 0 auto 1.5rem;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--tile-gap, 1rem);
+}
+
+.shots li {
+  counter-increment: shot;
+  position: relative;
+}
+
+.shots img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  /* --radius less the shell and reveal: the curve a photograph carries when it
+     sits inside a window elsewhere on the site. */
+  border-radius: calc(var(--radius) - var(--shell) - var(--reveal));
+  background-color: var(--rule);
+}
+
+/* The line under a spot's name: an address, then whatever links there are,
+   middot separated like the jump list and the publication rows. */
+/* The disc. Matched to the atlas badge: accent fill, white numeral, body face
+   at 500 — deliberately not Orbita, which is caps-only and has no figures
+   worth the name at this size. */
+.shots li::after,
+.spot-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: var(--reveal-color);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.shots li::after {
+  content: counter(shot);
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  /* The photograph is a lightbox link and the disc sits on top of it, so
+     without this the top-left corner of every picture is dead to the click. */
+  pointer-events: none;
+}
+
+/* The whole tile is the target. Lightbox2 needs a real <a>, and the anchor
+   would otherwise size itself to the inline image's line box. */
+.shots a {
+  display: block;
+  line-height: 0;
+}
+
+/* Slots into the icon column the rows already had, so the numeral sits exactly
+   where the location pin was. */
+.spot-num {
+  flex: 0 0 30px;
+  width: 30px;
+  margin-right: 10px;
+  align-self: flex-start;
+  /* The 30px track is wider than the 22px disc; centre it and keep it round. */
+  background-color: transparent;
+}
+
+.spot-num::before {
+  content: counter(spot);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: var(--reveal-color);
+  /* The list row is line-height 1.6 at body size, so nudge the disc down to
+     sit on the same optical line as the name beside it. */
+  margin-top: 0.15em;
+}
+
+.spot-meta {
+  display: block;
+  font-size: calc(var(--size-body) * 0.88);
+  color: #6e6e6e;
+  margin-top: 0.15em;
+}
+
+.spot-meta .sep {
+  margin: 0 0.45em;
+  color: #6e6e6e;
+}
+
+/* --- lightbox overrides ---------------------------------------------------
+   lightbox.css is a vendor file and gets replaced wholesale when the library
+   is updated, so corrections live here instead. style.css loads after it,
+   which is what lets these win at equal specificity. */
+
+/* Neutral black smoke against a warm page. Same 0.8 opacity the library sets,
+   just tinted, so the change is a shift in temperature rather than in depth. */
+.lightboxOverlay {
+  background-color: #241a16;
+}
+
+.lb-data .lb-caption {
+  font-family: var(--font-body);
+  font-weight: var(--weight-body);   /* the library asks for 200; we set the
+                                        same weight as the rest of the site */
+  font-size: var(--size-body);       /* was calc(0.75vw + 0.75vh) — identical
+                                        on a laptop, but no longer tied to
+                                        window height */
+  line-height: 1.35;                 /* 1em clipped descenders on long captions
+                                        that wrap on a phone */
+}
+
+/* ── the lightbox ──
+   Lightbox2 puts itself at scrollTop + positionFromTop on an ABSOLUTELY
+   positioned layer, so it is anchored to the document rather than to the
+   window and slides away the moment the page moves under it. Making both
+   layers fixed removes that whole class of bug. The !important flags are
+   aimed at the inline top/left the plugin writes on open, not at another
+   rule — there is no other way to beat an inline style. */
+.lightboxOverlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #14110e;
+  opacity: 0.9;
+}
+
+.lightbox {
+  position: fixed !important;
+  top: 50% !important;
+  left: 0 !important;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+/* The white card. lightbox.js reads this padding ONCE at start-up and sizes
+   the container from it, so the surround has to be declared in CSS that is
+   loaded before it — drawing it on afterwards would leave the box the wrong
+   size by exactly this much. */
+.lb-container { padding: 10px; }
+
+.lb-outerContainer {
+  background-color: #fff;
+  border-radius: 3px 3px 0 0;
+}
+
+.lightbox .lb-image { border-radius: 0; }
+
+/* The foot: caption on the left, place in the album on the right. */
+/* No horizontal padding here. lightbox.js sets this element's width with
+   jQuery .width(), which under Bootstrap's border-box sizing ADDS the padding
+   back on — so 10px a side made the white foot 20px wider than the photograph
+   above it. The inset lives on the children instead. */
+.lb-dataContainer {
+  position: relative;
+  background-color: #fff;
+  border-radius: 0 0 3px 3px;
+  padding: 0;
+}
+
+.lb-data { padding: 0; }
+
+.lb-data .lb-details {
+  float: none;
+  width: auto;
+  padding: 0.75em 10px 0.95em;   /* 10px matches the photograph's surround */
+  line-height: 1.35;
+  text-align: left;
+}
+
+.lb-data .lb-caption {
+  font-family: var(--font-body);
+  font-weight: var(--weight-body);
+  font-size: var(--size-small);
+  line-height: inherit;
+  color: #1e1c1a;
+}
+
+.lb-data .lb-number {
+  position: absolute;
+  right: 10px;
+  bottom: 0.95em;
+  display: block;
+  padding: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--size-caption);
+  color: var(--atlas-dim);
+}
+
+/* Relocated into the card by the script at the foot of this page, so it can
+   hang off the card's own corner instead of off a full-width layer whose
+   edges are nowhere near the photograph. */
+.lb-outerContainer > .lb-closeContainer {
+  position: absolute;
+  right: -4px;
+  bottom: 100%;
+  margin-bottom: 10px;
+  float: none;
+}
+
+.lb-closeContainer .lb-close {
+  display: block;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: none;
+  opacity: 0.8;
+  text-indent: 0;
+  font-family: var(--font-body);
+  font-size: 26px;
+  line-height: 30px;
+  text-align: center;
+  color: #fff;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.lb-closeContainer .lb-close::before { content: '\00d7'; }
+.lb-closeContainer .lb-close:hover { opacity: 1; }
+
+/* Chevrons beside the photograph rather than over it. These are floated by
+   lightbox.css, not positioned, so widening the nav box past the image is
+   what moves them outside it. */
+.lb-nav { left: -58px; right: -58px; width: auto; }
+
+.lb-nav a.lb-prev,
+.lb-nav a.lb-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 100%;
+  background: none;
+  opacity: 0.7;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 40px;
+  line-height: 1;
+  color: #fff;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.lb-nav a.lb-prev { float: left; }
+.lb-nav a.lb-next { float: right; }
+.lb-nav a.lb-prev::before { content: '\2039'; }
+.lb-nav a.lb-next::before { content: '\203a'; }
+
+.lb-nav a.lb-prev:hover,
+.lb-nav a.lb-next:hover { opacity: 1; }
+
+/* ---------------------------------------------------------------------------
+   WIDE SCREENS. This block is at the end of the file on purpose. Several rules
+   it overrides — .aboutprojectcontainer, .masthead — are declared further down
+   than it used to sit, and at equal specificity the later rule wins, so half of
+   these declarations were being silently discarded. In particular the base
+   margin:auto was re-centring the paragraph inside its grid area, which is what
+   opened the gap under the masthead.
+   --------------------------------------------------------------------------- */
+@media (min-width: 900px) {
+    .landing-body {
+        display: grid;
+        /* 43% not 46%: three points off the photograph is about 35px onto the
+           paragraph, which is a line saved at most widths. */
+        grid-template-columns: minmax(0, 1fr) minmax(0, 43%);
+        /* Empty tracks top and bottom: the masthead and paragraph sit together
+           as one vertically centred pair, while the photograph still spans the
+           full height of the column. */
+        grid-template-rows: 1fr auto auto 1fr;
+        grid-template-areas:
+            ".        photo"
+            "masthead photo"
+            "text     photo"
+            ".        photo";
+        column-gap: 2.5rem;
+        row-gap: 0;        /* the gap above is for the stacked layout only;
+                              here the empty grid tracks do the spacing */
+        padding: 0 1.5rem;
+    }
+
+    .masthead {
+        grid-area: masthead;
+        text-align: center;      /* centred over the paragraph beneath it */
+        margin: 0;               /* clears the stacked layout's -0.1em */
+        padding: 0 0 0.1em;
+    }
+
+    .aboutprojectcontainer {
+        grid-area: text;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        width: auto;
+        height: auto;
+        margin: 0;               /* NOT auto: that would re-centre it and
+                                    reopen the gap under the masthead */
+        text-align: center;
+    }
+
+    body.landing .backgroundimage {
+        grid-area: photo;
+        height: 100%;
+        padding: calc(var(--shell) + var(--reveal));
+    }
+
+    .landing-photo {
+        max-width: 100%;
+    }
+
+    /* Room to use the wider column. Still short of 90 characters, which was
+       the measure that made this read as a slab. */
+    .projectpara { max-width: 40rem; }
+
+    /* the breathing room belongs here instead */
+    body.landing footer {
+        margin-top: 2.5rem;
+    }
+}
+
+</style></head><body>
+
+<div class="column">
+
+<!-- One window, one grid. Splitting these into writing / recommendations /
+     tools meant three headed modules holding one, three and four tiles each —
+     a lot of furniture for eight pictures, and "miscellany" already tells the
+     reader not to expect a taxonomy. What kind of thing each is stays legible
+     from its meta line: a month for a piece, a country for a city.
+
+     Order is by hand for now, newest first. When build_writing.mjs arrives,
+     every record wants TWO fields here — a date that sorts and a meta that
+     displays — so a city can be ordered by when it was last touched while
+     still showing "Serbia".
+
+     The close button is a SIBLING of the sheet, not a child: a <button> inside
+     an <a> is invalid HTML, and nesting them is the only thing that would have
+     made it a child. Hidden except on touch, where the sheet is open. -->
+<section class="module">
+<p>
+Pieces that are not mathematics and not photographs.
+</p>
+
+<ul class="pieces">
+
+<li class="piece">
+<a class="piece-sheet" href="/vitti">
+<img class="piece-shot" src="images/miscellany/monicavittisheffield.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Monica Vitti in Sheffield</span>
+<span class="piece-note">Dating the three weeks in 1967 when Monicelli filmed <em>La ragazza con la pistola</em> here.</span>
+<span class="piece-meta">August 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="#" target="_blank" rel="noopener noreferrer">
+<img class="piece-shot" src="images/miscellany/gainebra.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">GainEbra</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</span>
+<span class="piece-meta">June 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<!-- ══ DRAFT ENTRIES ══ Placeholder notes and invented dates; none of the four
+     city pages exists yet. Delete or comment out anything still unwritten
+     before this page goes into the nav. -->
+
+<li class="piece">
+<a class="piece-sheet" href="#">
+<img class="piece-shot" src="images/miscellany/writingexample1.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">A second piece</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</span>
+<span class="piece-meta">January 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="#">
+<img class="piece-shot" src="images/miscellany/writingexample2.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">A third, with a much longer title to find the wrap</span>
+<span class="piece-note">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</span>
+<span class="piece-meta">November 2025</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/sheffield">
+<img class="piece-shot" src="images/miscellany/recs_sheffield.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Sheffield</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</span>
+<span class="piece-meta">England</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/naples">
+<img class="piece-shot" src="images/miscellany/recs_naples.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Naples</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</span>
+<span class="piece-meta">Italy</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/belgrade">
+<img class="piece-shot" src="images/miscellany/recs_belgrade.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Belgrade</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</span>
+<span class="piece-meta">Serbia</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/london">
+<img class="piece-shot" src="images/miscellany/recs_london.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about London</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</span>
+<span class="piece-meta">England</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<!-- ══ END DRAFT ENTRIES ══ -->
+
+</ul>
+</section>
+
+</div>
+
+<script>
+/* miscellany.js — tap to open, tap again to go.
+ *
+ * Where there is a pointer, hover does all the work and this file does nothing:
+ * every click falls straight through to the link. Where there is not, a card
+ * has to be opened before it can be followed, or the only way to read a title
+ * would be to visit the piece it belongs to.
+ *
+ * The media query is tested at click time rather than at load, so a window
+ * dragged across the breakpoint — or a laptop with a touchscreen, which
+ * reports both — behaves correctly without a reload.
+ *
+ * No jQuery: this is four listeners and a class.
+ */
+(function () {
+  'use strict';
+
+  var TOUCH = window.matchMedia('(hover: none), (max-width: 600px)');
+  var pieces = document.querySelectorAll('.piece');
+  if (!pieces.length) return;
+
+  function closeAll(except) {
+    document.querySelectorAll('.piece.is-open').forEach(function (p) {
+      if (p !== except) p.classList.remove('is-open');
+    });
+  }
+
+  document.querySelectorAll('.piece-sheet').forEach(function (sheet) {
+    sheet.addEventListener('click', function (e) {
+      if (!TOUCH.matches) return;              // hovering already opened it
+      var piece = sheet.closest('.piece');
+      if (piece.classList.contains('is-open')) return;   // second tap: follow
+      e.preventDefault();
+      // Only one at a time. Two open sheets would overlap each other, and the
+      // one later in source order would win on z-index for no good reason.
+      closeAll(piece);
+      piece.classList.add('is-open');
+    });
+  });
+
+  document.querySelectorAll('.piece-close').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      // The button is a sibling of the link, not a child, so this is only
+      // guarding against the document listener below.
+      e.stopPropagation();
+      btn.closest('.piece').classList.remove('is-open');
+    });
+  });
+
+  // A tap anywhere else on the page closes whatever is open — the same thing
+  // moving the pointer away does on a desktop.
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.piece')) closeAll(null);
+  });
+
+  // Escape, for a keyboard that has one.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAll(null);
+  });
+
+  // Crossing the breakpoint mid-session would otherwise strand a card open
+  // with no × to close it, because the button is hidden above 600px.
+  TOUCH.addEventListener('change', function () { closeAll(null); });
+})();
+
+</script></body></html>

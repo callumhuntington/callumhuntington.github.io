@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>gallery diagnostic 2</title>
+<style>
+  body { font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #f4f1ea; color: #1a1a1a; margin: 0; padding: 2rem 2.5rem; }
+  h1 { font: 600 18px/1.4 system-ui, sans-serif; margin: 0 0 .3rem; }
+  p.sub { font: 13px/1.5 system-ui, sans-serif; color: #6b665d; margin: 0 0 1.4rem; }
+  .row { padding: 3px 0; }
+  .ok { color: #2c6e3f; } .bad { color: #c4362b; font-weight: 700; }
+  h2 { font: 600 13px/1.4 system-ui, sans-serif; text-transform: uppercase;
+       letter-spacing: .08em; color: #8a8479; margin: 1.6rem 0 .4rem; }
+  pre { background:#fff; border:1px solid #e2ddd3; border-radius:6px;
+        padding:.7rem .9rem; white-space:pre-wrap; margin:.3rem 0; }
+  button { font:600 13px system-ui,sans-serif; background:#c4362b; color:#fff;
+           border:0; border-radius:6px; padding:.6rem 1.1rem; cursor:pointer;
+           margin-top:1.2rem; }
+</style>
+</head>
+<body>
+
+<h1>gallery diagnostic 2</h1>
+<p class="sub">Next to gallery.html. Reads only, changes nothing.</p>
+
+<!-- Errors first, BEFORE anything else, so nothing can throw unobserved.
+     e.error carries a real stack when the script is same-origin. Over file://
+     Chrome gives each script its own opaque origin and strips this to a bare
+     "Script error." with no line number — which is exactly why the last
+     report could not say more than that. -->
+<script>
+var ERRORS = [];
+window.addEventListener('error', function (e) {
+  ERRORS.push({
+    msg: e.message || '(no message)',
+    file: (e.filename || '').split('/').pop() || '(none)',
+    line: e.lineno, col: e.colno,
+    stack: e.error && e.error.stack ? e.error.stack : ''
+  });
+});
+</script>
+
+<!-- The markup atlas.js reaches for, copied from gallery.html. Positioned off
+     screen rather than display:none, so anything it measures gets real
+     numbers instead of zeros. -->
+<main style="position:absolute;left:-10000px;top:0;width:1200px">
+  <section id="atlas-world" class="atlas">
+    <div class="atlas-map"></div>
+    <nav class="region-index"></nav>
+  </section>
+  <section id="atlas-region" class="region-view" hidden>
+    <a class="region-back" href="#" data-no-smooth-scroll>back</a>
+    <h2 class="region-title" tabindex="-1"></h2>
+    <p class="region-note"></p>
+    <div class="region-stage"></div>
+  </section>
+</main>
+
+<!-- The lookups atlas.js makes, run HERE — before it loads — so the report can
+     say whether an element was missing rather than only that something threw.
+     The last version had no <main> at all, which is what produced its first
+     error; that one was my page's fault, not the site's. -->
+<script>
+var LOOKUPS = [
+  ['.atlas-map',    document.querySelector('.atlas-map')],
+  ['.region-index', document.querySelector('.region-index')],
+  ['#atlas-world',  document.getElementById('atlas-world')],
+  ['main',          document.querySelector('main')],
+  ['#atlas-region', document.getElementById('atlas-region')]
+];
+var V = document.getElementById('atlas-region');
+if (V) LOOKUPS.push(
+  ['#atlas-region .region-title', V.querySelector('.region-title')],
+  ['#atlas-region .region-note',  V.querySelector('.region-note')],
+  ['#atlas-region .region-stage', V.querySelector('.region-stage')]);
+</script>
+
+<div id="out"></div>
+<button id="copy">Copy this report</button>
+
+<!-- STATIC tags, in gallery.html's order. The previous version injected these
+     from script, which lands them after DOMContentLoaded and changes when
+     atlas.js routes — so its "title EMPTY" line was measuring my harness
+     rather than your site. Ignore that line from the old report. -->
+<script src="data/photos.js?v=28"></script>
+<script src="js/atlas-data.js?v=9"></script>
+<script src="js/atlas-sheets.js?v=31"></script>
+<script src="js/atlas.js?v=25"></script>
+
+<script>
+var LOG = [];
+function line(c, t) {
+  LOG.push((c === 'bad' ? '!! ' : '   ') + t);
+  var d = document.createElement('div');
+  d.className = 'row ' + c;
+  d.textContent = (c === 'bad' ? '\u2715  ' : '\u2713  ') + t;
+  document.getElementById('out').appendChild(d);
+}
+function head(t) {
+  LOG.push('\n== ' + t.toUpperCase());
+  var h = document.createElement('h2'); h.textContent = t;
+  document.getElementById('out').appendChild(h);
+}
+
+function report() {
+  var world = document.getElementById('atlas-world');
+  var view  = document.getElementById('atlas-region');
+  var ti = document.querySelector('.region-title');
+  var no = document.querySelector('.region-note');
+  var st = document.querySelector('.region-stage');
+  var map = document.querySelector('.atlas-map');
+  var idx = document.querySelector('.region-index');
+
+  head('elements atlas.js looks for');
+  LOOKUPS.forEach(function (l) {
+    line(l[1] ? 'ok' : 'bad', l[0] + (l[1] ? ' found' : '  MISSING'));
+  });
+
+  head('did atlas.js initialise at all');
+  line(map && map.querySelector('svg') ? 'ok' : 'bad',
+       'world map svg: ' + (map && map.querySelector('svg') ? 'built'
+         : 'NOT BUILT — atlas.js threw during setup, before any routing'));
+  line(idx && idx.children.length ? 'ok' : 'bad',
+       'region index links: ' + (idx ? idx.children.length : 0) + ' (expected 14)');
+
+  head('did routing run');
+  line('ok', 'hash: "' + location.hash + '"');
+  line(world.hidden ? 'ok' : 'bad', '#atlas-world hidden: ' + world.hidden +
+       (world.hidden ? '' : '   <- routing never switched views'));
+  line(!view.hidden ? 'ok' : 'bad', '#atlas-region hidden: ' + view.hidden);
+  line(ti && ti.textContent ? 'ok' : 'bad',
+       'title text: ' + (ti && ti.textContent ? '"' + ti.textContent + '"' : 'EMPTY'));
+  line(no && no.textContent ? 'ok' : 'bad',
+       'note text: ' + (no && no.textContent ? '"' + no.textContent + '"' : 'EMPTY'));
+  line(st && st.children.length ? 'ok' : 'bad',
+       'stage children: ' + (st ? st.children.length : 0) +
+       (st && st.children.length ? ' [' + [].map.call(st.children,
+          function (c) { return c.className; }).join(', ') + ']' : ''));
+  line(st && st.querySelector('svg') ? 'ok' : 'bad',
+       'sheet svg: ' + (st && st.querySelector('svg')
+         ? st.querySelector('svg').getAttribute('viewBox') : 'NOT BUILT'));
+  line('ok', 'cards: ' + (st ? st.querySelectorAll('.card').length : 0));
+
+  head('errors');
+  if (!ERRORS.length) line('ok', 'none');
+  ERRORS.forEach(function (e) {
+    line('bad', e.msg + '   [' + e.file + ':' + e.line + ':' + e.col + ']');
+    if (e.stack) {
+      LOG.push(e.stack);
+      var p = document.createElement('pre'); p.textContent = e.stack;
+      document.getElementById('out').appendChild(p);
+    }
+  });
+
+  head('environment');
+  line('ok', 'protocol: ' + location.protocol);
+  if (location.protocol === 'file:')
+    line('bad', 'Opened from disk. Chrome gives every file:// script an opaque ' +
+         'origin, so error messages and line numbers are stripped to a bare ' +
+         '"Script error." Serve the folder over http and reload to see them.');
+  line('ok', navigator.userAgent);
+}
+
+// Route to a region, then report once the hashchange has been handled.
+window.addEventListener('load', function () {
+  location.hash = 'yugoslavia';
+  setTimeout(report, 400);
+});
+
+document.getElementById('copy').onclick = function () {
+  var t = LOG.join('\n');
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () {
+    document.getElementById('copy').textContent = 'Copied';
+  });
+  else window.prompt('Copy this:', t);
+};
+</script>
+</body>
+</html>

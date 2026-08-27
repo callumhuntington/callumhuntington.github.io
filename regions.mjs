@@ -1,0 +1,166 @@
+/* regions.mjs — the region map.
+ *
+ * The one piece of configuration in the atlas. Both build scripts import it,
+ * so the world map and the region sheets can never disagree about what a
+ * region is. Country names must match Natural Earth's spelling exactly; the
+ * build throws rather than silently dropping one.
+ *
+ * clip:      [lonW, lonE, latS, latN] — Natural Earth files overseas
+ *            departments and dependencies under the parent country, which
+ *            would drag a region's outline across the map. The window keeps
+ *            only the polygons whose centre falls inside it.
+ * sheetClip: the same idea, applied when the region opens. South Africa should
+ *            open on the Cape rather than the whole country.
+ */
+
+/* Countries whose ADMIN-1 divisions — states, provinces — are drawn as internal
+ * borders on a region sheet. This is a different data source from the set
+ * below: Natural Earth's map-subunits layer has no states in it, so these come
+ * from ne_50m_admin_1_states_provinces via prepare_subunits.mjs, which writes
+ * them to their own topology.
+ *
+ * The United States and nothing else, on purpose. A border only earns its ink
+ * when the reader already knows the shape it draws: the American state grid is
+ * one of the most recognisable political maps there is, so the lines help place
+ * a photograph even where there is no film, and the sheet is 4,500km of mostly
+ * empty black that they furnish. Italian regions, French départements and
+ * British counties do not have that — they would be a mesh of white hairlines
+ * saying only "this country has administrative subdivisions" to a reader who
+ * cannot name them, and on Italy in particular they would compete with
+ * twenty-two leader strings for exactly the same hairline. The four UK
+ * countries below are the other case that works, and for the same reason: four
+ * shapes everyone knows, not forty they do not. */
+export const SPLIT_STATES = new Set(['United States of America']);
+
+/* Countries whose interior is drawn at all — the set that decides where a
+ * border goes, rather than where the pieces come from. Everything not listed
+ * here is one solid shape, so Belgium does not arrive split into three regions
+ * and Bosnia is not cut in half along the Republika Srpska line.
+ *
+ * Anything in SPLIT_STATES is necessarily in here, so it is folded in rather
+ * than repeated: listing a country in one and forgetting the other would give
+ * you state geometry with no borders drawn from it, and no error to say so. */
+export const SPLIT_SUBUNITS = new Set(['United Kingdom', ...SPLIT_STATES]);
+
+/* The subunits layer spells three of these differently from the countries
+ * layer the world map uses. */
+export const SUBUNIT_ALIAS = {
+  'Bosnia and Herz.': 'Bosnia and Herzegovina',
+  'Macedonia':        'North Macedonia',
+  'Serbia':           'Republic of Serbia',
+};
+
+export const REGIONS = {
+  usa:          {label: 'united states',
+                 countries: ['United States of America'],
+                 clip: [-170, -60, 18, 72],
+                 sheetClip: [-125, -66, 24, 50]},          // contiguous only
+
+  southerncone: {label: 'southern cone',
+                 countries: ['Argentina', 'Brazil', 'Uruguay'],
+                 clip: [-76, -30, -56, 6],
+                 sheetClip: [-66, -41, -38, -19]},        // the Plata, RS and
+                                                          // São Paulo, with a
+                                                          // margin all round
+
+  britishisles: {label: 'british isles',
+                 countries: ['United Kingdom', 'Ireland'],
+                 clip: [-11, 2, 49, 61],
+                 // Orkney and Shetland are trimmed from the SHEET only — they
+                 // reach 60.8°N against Dunnet Head's 58.7°N, so two degrees
+                 // of empty North Sea were setting the frame's height for a
+                 // handful of islands with nothing on them. They stay on the
+                 // world map, where they cost nothing.
+                 sheetClip: [-11, 2, 49, 58.72]},
+
+  iberia:       {label: 'iberia',
+                 countries: ['Spain', 'Portugal'],
+                 clip: [-10, 4, 35, 44]},                  // drops the Canaries
+
+  france:       {label: 'france',
+                 countries: ['France'],
+                 clip: [-6, 10, 41, 52]},                  // drops Guyane et al
+
+  // One sheet rather than two. Vienna is closer to Munich than Munich is to
+  // Hamburg, the border between them is nowhere in the photographs, and a
+  // region of three Berlin frames beside a region of three Vienna ones would
+  // be two thin sheets where one full one will do.
+  austriagermany: {label: 'austria-germany',
+                 countries: ['Germany', 'Austria']},
+
+  lowcountries: {label: 'the low countries',
+                 countries: ['Belgium', 'Netherlands', 'Luxembourg'],
+                 clip: [2, 8, 49, 54]},   // drops the Caribbean Netherlands,
+                                          // which Natural Earth files under
+                                          // the parent and which otherwise
+                                          // stretched the region to 293px wide
+
+  italy:        {label: 'italy',
+                 countries: ['Italy']},
+
+  // Kosovo is included because Serbia's polygon in this dataset excludes it,
+  // and without it the merged silhouette has a hole in the middle. This is a
+  // requirement of drawing one solid shape, not a position on anything.
+  yugoslavia:   {label: 'former yugoslavia',
+                 countries: ['Serbia', 'Croatia', 'Slovenia', 'Bosnia and Herz.',
+                             'Montenegro', 'Macedonia', 'Kosovo']},
+
+  /* The only PANELLED region. Athens and Istanbul are 560km apart with nothing
+   * between them, so a single sheet of Greece and Turkey would be two dots on
+   * an empty map reaching to Iran. Instead the sheet is split into two city
+   * maps side by side, each with its own window and its own projection.
+   *
+   * `countries` still drives the world map, which is unchanged — the split
+   * exists only one level down. Panel windows are [lonW, lonE, latS, latN] and
+   * want to be roughly the same width as each other, or the two panels read as
+   * being at the same zoom when they are not. Both are about 65km across.
+   *
+   * These need the 10m coastline, not the 50m one the other sheets use: at
+   * city scale 50m data is a handful of vertices and draws a rectangle. */
+  greeceturkey: {label: 'greece & turkey',
+                 countries: ['Greece', 'Turkey'],
+                 panels: [
+                   {label: 'athens',   country: 'Greece',
+                    box: [23.35, 24.10, 37.66, 38.14]},
+                   {label: 'istanbul', country: 'Turkey',
+                    box: [28.62, 29.36, 40.85, 41.30]},
+                 ]},
+
+  // Finland belongs here rather than with Scandinavia: Estonian and Finnish
+  // are the same branch, and the Gulf between Tallinn and Helsinki is eighty
+  // kilometres. Lithuania stays — it is not Finnic, but leaving a hole in the
+  // middle of the eastern Baltic would say something the map does not mean.
+  balticfinnic: {label: 'baltic finnic',
+                 countries: ['Lithuania', 'Latvia', 'Estonia', 'Finland']},
+
+  caucasus:     {label: 'the caucasus',
+                 countries: ['Armenia', 'Georgia', 'Azerbaijan']},
+
+  /* Panelled, like Greece & Turkey, but with one window rather than two.
+   *
+   * Everything shot here is on the Cape Peninsula, within thirty kilometres of
+   * the city, and a sheet of the whole Cape put all six on one pin. Trimming
+   * to the peninsula separates them — but a window this small cannot be drawn
+   * from the 50m coastline the ordinary sheets use, which renders sixty
+   * kilometres of shore as four vertices. A panel gets the 10m data.
+   *
+   * The window is deliberately taller than the frame it sits in: the
+   * projection is fitted to the WINDOW, so a portrait box is drawn at the full
+   * height of the panel and centred, which is what makes the peninsula large.
+   * It reaches to Cape Point, past the southernmost photograph, because the
+   * shape is the recognisable thing and stopping at Boulders would cut it off.
+   *
+   * `countries` and `clip` still drive the world map, where South Africa is
+   * highlighted whole. The trim exists only one level down. */
+  southafrica:  {label: 'south africa',
+                 countries: ['South Africa'],
+                 clip: [10, 34, -36, -20],                 // drops Prince Edward Is.
+                 panels: [
+                   {label: 'cape town', country: 'South Africa',
+                    box: [18.25, 18.70, -34.40, -33.80]},
+                 ]},
+
+  oceania:      {label: 'australia & new zealand',
+                 countries: ['Australia', 'New Zealand'],
+                 clip: [110, 180, -48, -9]},
+};

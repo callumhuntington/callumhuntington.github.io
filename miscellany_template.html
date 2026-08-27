@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge,chrome=1">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="keywords" content="callumhuntington.com, callum, huntington, callum huntington, writing, essays, recommendations, sheffield, naples, belgrade, london">
+<meta name="description" content="Writing, city recommendations and things made, by Callum Huntington.">
+<title>miscellany — callum huntington</title>
+<link rel="canonical" href="https://callumhuntington.com/miscellany">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="callum huntington">
+<meta property="og:title" content="miscellany — callum huntington">
+<meta property="og:description" content="Writing, city recommendations and things made.">
+<meta property="og:url" content="https://callumhuntington.com/miscellany">
+<meta property="og:image" content="https://callumhuntington.com/squarepic_callumhuntington.jpeg">
+<meta name="twitter:card" content="summary">
+
+<link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png?v=2" sizes="32x32" type="image/png">
+<link rel="icon" href="favicon-192.png?v=2" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZGGQLFW2KZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ZGGQLFW2KZ');
+</script>
+
+<link rel="preload" href="fonts/DMSans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/OrbitaTraced.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- Third-party stylesheets FIRST. Bootstrap's reboot sets body{font-family},
+     and at equal specificity whichever loads last wins — so style.css has to
+     come after it or every body rule here is silently discarded. -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<link rel="stylesheet" href="css/style.css?v=49">
+</head>
+
+<body>
+<nav aria-label="main">
+<ul class="nav-bar">
+<li class="nav-link"><a href="/">home</a></li>
+<li class="nav-link"><a href="/mathematics">mathematics</a></li>
+<li class="nav-link"><a href="/gallery">gallery</a></li>
+<li class="nav-link"><a href="/miscellany" aria-current="page">miscellany</a></li>
+</ul>
+</nav>
+
+<div class="gapfillphoto">
+</div>
+<div class="gapfillphoto">
+</div>
+
+<main>
+<div class="column">
+
+<!-- One window, one grid. Splitting these into writing / recommendations /
+     tools meant three headed modules holding one, three and four tiles each —
+     a lot of furniture for eight pictures, and "miscellany" already tells the
+     reader not to expect a taxonomy. What kind of thing each is stays legible
+     from its meta line: a month for a piece, a country for a city.
+
+     Order is by hand for now, newest first. When build_writing.mjs arrives,
+     every record wants TWO fields here — a date that sorts and a meta that
+     displays — so a city can be ordered by when it was last touched while
+     still showing "Serbia".
+
+     The close button is a SIBLING of the sheet, not a child: a <button> inside
+     an <a> is invalid HTML, and nesting them is the only thing that would have
+     made it a child. Hidden except on touch, where the sheet is open. -->
+<section class="module">
+<p>
+Pieces that are not mathematics and not photographs.
+</p>
+
+<ul class="pieces">
+
+<li class="piece">
+<a class="piece-sheet" href="/vitti">
+<img class="piece-shot" src="images/miscellany/monicavittisheffield.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Monica Vitti in Sheffield</span>
+<span class="piece-note">Dating the three weeks in 1967 when Monicelli filmed <em>La ragazza con la pistola</em> here.</span>
+<span class="piece-meta">August 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="#" target="_blank" rel="noopener noreferrer">
+<img class="piece-shot" src="images/miscellany/gainebra.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">GainEbra</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</span>
+<span class="piece-meta">June 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<!-- ══ DRAFT ENTRIES ══ Placeholder notes and invented dates; none of the four
+     city pages exists yet. Delete or comment out anything still unwritten
+     before this page goes into the nav. -->
+
+<li class="piece">
+<a class="piece-sheet" href="#">
+<img class="piece-shot" src="images/miscellany/writingexample1.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">A second piece</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</span>
+<span class="piece-meta">January 2026</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="#">
+<img class="piece-shot" src="images/miscellany/writingexample2.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">A third, with a much longer title to find the wrap</span>
+<span class="piece-note">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</span>
+<span class="piece-meta">November 2025</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/sheffield">
+<img class="piece-shot" src="images/miscellany/recs_sheffield.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Sheffield</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</span>
+<span class="piece-meta">England</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/naples">
+<img class="piece-shot" src="images/miscellany/recs_naples.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Naples</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</span>
+<span class="piece-meta">Italy</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/belgrade">
+<img class="piece-shot" src="images/miscellany/recs_belgrade.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about Belgrade</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</span>
+<span class="piece-meta">Serbia</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<li class="piece">
+<a class="piece-sheet" href="/london">
+<img class="piece-shot" src="images/miscellany/recs_london.jpeg" alt="">
+<div class="piece-panel">
+<span class="piece-title">Things I like about London</span>
+<span class="piece-note">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</span>
+<span class="piece-meta">England</span>
+</div>
+</a>
+<button class="piece-close" type="button" aria-label="close">&times;</button>
+</li>
+
+<!-- ══ END DRAFT ENTRIES ══ -->
+
+</ul>
+</section>
+
+</div>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="js/app.js?v=2"></script>
+<script src="js/miscellany.js?v=1"></script>
+
+</body>
+</html>

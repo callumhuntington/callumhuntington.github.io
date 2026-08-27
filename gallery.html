@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge,chrome=1">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="keywords" content="callumhuntington.com, callum, huntington, callum huntington, graph theory, mathematics, sheffield, naples">
+<meta name="description" content="A gallery of film photographs by Callum Huntington — pinned to the places they were taken, region by region.">
+<title>gallery — callum huntington</title>
+<link rel="canonical" href="https://callumhuntington.com/gallery">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="callum huntington">
+<meta property="og:title" content="gallery — callum huntington">
+<meta property="og:description" content="A gallery of film photographs, pinned to the places they were taken.">
+<meta property="og:url" content="https://callumhuntington.com/gallery">
+<meta property="og:image" content="https://callumhuntington.com/squarepic_callumhuntington.jpeg">
+<meta name="twitter:card" content="summary">
+
+<link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png?v=2" sizes="32x32" type="image/png">
+<link rel="icon" href="favicon-192.png?v=2" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZGGQLFW2KZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ZGGQLFW2KZ');
+</script>
+
+<link rel="preload" href="fonts/DMSans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Every card caption sets its second line in italic, so on this page the
+     italic is not an occasional accent — it is on screen once per photograph.
+     Without this it is discovered only after the stylesheet has parsed and the
+     cards have rendered, which is a visible reflow. -->
+<link rel="preload" href="fonts/DMSans-Italic-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/OrbitaTraced.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- Third-party stylesheets FIRST. Bootstrap's reboot sets body{font-family},
+     and at equal specificity whichever loads last wins — so style.css has to
+     come after it or every body rule here is silently discarded. -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<link rel="stylesheet" href="css/lightbox.css">
+<link rel="stylesheet" href="css/style.css?v=49">
+<style>
+/* ── the atlas ──
+   Scoped to this page, as the photo grid was. Three new colours; everything
+   else comes from the custom properties in style.css. */
+:root {
+  --atlas-land:  #d7d2c7;   /* the rest of the world */
+  --atlas-empty: #a49e93;   /* a region that exists but has no photographs */
+  --atlas-dim:   #8a8479;   /* secondary text */
+
+  /* Everything on the page that is NOT the map. The map is then sized from
+     whatever height is left, so it and its frame are always wholly on screen
+     and the page never scrolls. If the fit is a little out — a taller footer,
+     a longer region name wrapping to two lines — these are the two numbers to
+     nudge, and nothing else needs to change.
+       14vh  the two 7vh spacers above the content
+       px    region: the head row and the frame's shell
+             world:  the region index and the frame's shell           */
+  --atlas-gap: 1rem;   /* the buffer under the head row, and under the frame */
+
+  --chrome-region: calc(14vh + 104px + var(--atlas-gap));
+  --chrome-world:  calc(14vh + 112px + var(--atlas-gap));
+}
+
+/* Stated explicitly. A later display rule on either section would otherwise
+   beat the user-agent default for [hidden] and leave both on screen at once. */
+[hidden] { display: none !important; }
+
+.atlas,
+.region-view {
+  width: var(--measure);   /* the shared column: mathematics modules, the
+                              landing photograph, and now the atlas */
+  margin: 0 auto;
+}
+
+/* Same construction as a mathematics module — a red shell with a white reveal
+   inside it. The map is a window like everything else on the site.
+
+   The red box spans the full column and the map is centred inside it. An
+   earlier version had the box shrink-wrap the map to close the margins either
+   side; it is not worth it — the frame is 1.94:1 now, so those margins are
+   small, and sizing a box from its own child means reaching for the viewport
+   for the width limit, which then disagrees with a percentage-width parent by
+   exactly the width of the scrollbar. */
+.atlas-map,
+.region-stage {
+  border: var(--shell) solid var(--accent);
+  border-radius: var(--radius);
+  padding: var(--reveal);
+  background-color: var(--reveal-color);
+}
+
+/* The map is as large as it can be while still fitting the height left over.
+   min() picks whichever runs out first: usually the height, and on a narrow
+   window the width. --frame-ar is set from the viewBox by atlas.js, because
+   CSS cannot read it.
+
+   Written as a width rather than a height on purpose: aspect-ratio derives the
+   missing dimension only from a definite one, so setting height and letting
+   max-width clamp the width would just squash the drawing.
+
+   min() picks whichever runs out first: usually the height, so the whole map
+   stays on screen; on a short wide window the 100% takes over and the map is
+   limited by the column instead. */
+.map-frame,
+.sheet-frame {
+  position: relative;
+  width: min(100%, calc(var(--free-h) * var(--frame-ar)));
+  height: auto;
+  margin: 0 auto;
+}
+
+.map-frame  { --free-h: calc(100dvh - var(--chrome-world)); }
+
+/* A query container, so cards and their captions can be sized as a fraction
+   of the MAP rather than of the viewport. They then hold their proportions
+   whatever the window does, and a region whose cards are smaller gets
+   proportionally smaller type without a second variable to keep in step. */
+/* Measured by atlas.js to find out how much height the sheet has been given.
+   Absolute, so it is not a flex item and moves nothing. */
+.fit-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: var(--free-h);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sheet-frame {
+  container-type: inline-size;
+}
+
+.atlas-svg,
+.sheet-svg {
+  display: block;   /* kills the inline-element baseline gap underneath */
+  width: 100%;
+  height: 100%;
+}
+
+/* ── world map ── */
+.atlas-land { fill: var(--atlas-land); }
+
+.atlas-region {
+  fill: var(--ink);
+  /* A transparent stroke is still a PAINTED stroke as far as hit-testing goes
+     — pointer-events: visiblePainted asks whether `stroke` is `none`, not
+     whether it is opaque. So this widens every country by ~3.5 units a side
+     without showing anything, which is the difference between the Low
+     Countries being clickable at 17px wide and not. */
+  stroke: transparent;
+  stroke-width: 7;
+  cursor: pointer;
+  transition: fill var(--speed) var(--ease);
+}
+
+/* A region with no photographs yet. Still clickable — it opens and says so,
+   which is friendlier than a dead shape — but it reads as grey rather than
+   black, so the map shows at a glance where the film actually is. */
+.atlas-region.is-empty { fill: var(--atlas-empty); }
+
+.atlas-region:hover,
+.atlas-region.is-active { fill: var(--accent); }
+
+/* ── the hover label ──
+   Name and count on a hairline leader, hung off the region's centroid. Sizes
+   are in viewBox units, not pixels: the SVG scales with the frame, so the
+   label scales with the map and stays in proportion at any window width.
+
+   pointer-events: none matters — without it the label would sit under the
+   cursor as it travels, the region beneath would lose :hover, and the whole
+   thing would flicker off and on. */
+.atlas-hover {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.atlas-hover.is-on { opacity: 1; }
+
+.atlas-hover-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+.atlas-hover-dot { fill: var(--accent); }
+
+.atlas-hover-name {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 21px;
+  fill: var(--accent);
+}
+
+.atlas-hover-count {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 16px;
+  fill: var(--accent);
+}
+
+/* ── the region index ──
+   The map's legend, and on a touch screen the whole navigation — there is no
+   hover there, and a 17px country is not a target. Real anchors, so this is
+   also what keyboard and screen-reader users get; the SVG above is aria-hidden
+   precisely because everything it does is duplicated here. */
+.region-index {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4em 1.7em;
+  width: 100%;
+  margin: 1.5rem auto 0;
+  padding: 0;
+  /* A margin either side that grows as the window narrows, so the names wrap
+     sooner and take more rows rather than sitting in two lines with a page of
+     empty ground beneath them. It has to run BACKWARDS against the viewport —
+     the wide layout is already right and wants no inset at all — which is what
+     the subtraction does: 300px less 24vw, floored at nothing once the window
+     is wide enough, and capped at 14% so a phone is not left with a gutter
+     wider than the words.
+
+     Roughly: nothing above ~1250px, ~70px each side at 950, ~90px at 730,
+     and the percentage cap taking over below about 650. */
+  padding-inline: min(14%, max(0px, 300px - 24vw));
+  list-style: none;
+
+  /* Deliberately NOT --size-body. The shared scale is mostly vw, which is
+     right for prose — a narrow window gets shorter lines and smaller type. The
+     index wants the opposite: it is a fixed set of fourteen names with a whole
+     page under it, so shrinking with the viewport left a widening band of
+     empty ground below. Flat 1rem to about 1300px, which is the size it
+     already had at that width, then free to grow on a large monitor.
+
+     This is the FLOOR, not the final word. fitIndex() in atlas.js measures the
+     height actually left over and raises the size from here until the index
+     fills it — which is why the declaration lives on the list rather than on
+     the links, so one inline size on the parent moves the whole thing. */
+  font-size: clamp(1rem, 0.55rem + 0.55vw, 1.4rem);
+}
+
+.region-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45em;
+  font-family: var(--font-body);
+  font-weight: var(--weight-body);
+  font-size: inherit;      /* the list decides — see .region-index above */
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.1em 0;
+  border-bottom: 2px solid transparent;
+  transition: color var(--speed) var(--ease),
+              border-color var(--speed) var(--ease);
+}
+
+.region-link.is-empty { color: var(--atlas-dim); }
+
+.region-n {
+  font-size: 0.78em;   /* em, so it tracks the name it belongs to */
+  font-style: italic;
+  color: var(--atlas-dim);
+}
+
+.region-link:hover,
+.region-link:focus-visible,
+.region-link.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  text-decoration: none;
+}
+
+/* ── the region view ── */
+.region-back {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: var(--size-small);
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.region-back:hover { color: var(--accent-dark); text-decoration: none; }
+
+.region-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: var(--size-h2);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #1a1a1a;
+  margin: 0.9rem 0 var(--atlas-gap);
+  text-align: center;
+}
+
+/* The title takes focus when a region opens, so a keyboard user lands on the
+   new content rather than back at the top of the document. It is not
+   interactive, so it should not also carry a focus ring. */
+.region-title:focus { outline: none; }
+
+.region-note {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--size-small);
+  color: var(--atlas-dim);
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* The red box holds the height set aside for the sheet, whether or not the
+   drawing needs all of it. On a wide window it makes no difference: the height
+   runs out first, the frame takes all of it, and the box fits the drawing
+   exactly as before. Narrow the window and the drawing becomes width-limited
+   instead — 1.94:1 against a box that is now much taller — and rather than the
+   frame collapsing to a letterbox with a page of empty ground beneath it, the
+   window keeps its height and the sheet sits in the middle of it.
+
+   The shell and the reveal have to be ADDED to the stated height, not left to
+   come out of it. The box is border-box, so a bare min-height of --free-h
+   describes the outside of the red border; but when the height binds the
+   frame takes the whole of --free-h INSIDE it, and the box grows to
+   --free-h + 24 to hold it. The two cases then disagree by exactly those
+   24px, which is the bottom border stepping up as the window narrows.
+
+   --free-h moves up here from .sheet-frame so both can read it — custom
+   properties inherit, so the frame still sizes itself from the same number. */
+.region-stage {
+  position: relative;
+  --free-h: calc(100dvh - var(--chrome-region));
+  min-height: calc(var(--free-h) + 2 * (var(--shell) + var(--reveal)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#atlas-world { display: flex; flex-direction: column; }
+
+/* The frame runs to the foot of the page, held off the bottom by the same
+   buffer that sits between the head row and the top of the frame. */
+main { padding-bottom: var(--atlas-gap); }
+
+/* The region head on one row — back link left, name centred, count right —
+   rather than stacked, which was spending about 50px of height on three lines
+   that fit comfortably in one. A grid rather than a flex row because the
+   three-column track keeps the name optically centred on the page regardless
+   of how wide the other two are; with flex it would drift with the count.
+   Baseline alignment sits all three on the same line despite the size gap. */
+.region-view {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: auto 1fr;
+  align-items: baseline;
+  column-gap: 1.5rem;
+}
+
+.region-view > .region-back  { grid-area: 1 / 1; justify-self: start; }
+.region-view > .region-title { grid-area: 1 / 2; }
+.region-view > .region-note  { grid-area: 1 / 3; justify-self: end; }
+.region-view > .region-stage { grid-area: 2 / 1 / 3 / -1; }
+
+/* ── the sheet ── */
+.sheet-land { fill: var(--ink); }
+
+.sheet-borders {
+  fill: none;
+  stroke: var(--reveal-color);
+  stroke-width: 2.4;      /* clipping to the silhouette eats the outer half of
+                             any stroke that meets the coast, so this reads as
+                             ~1.2 at the edges and 2.4 inland */
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.sheet-leader { stroke: var(--accent); stroke-width: 1.8; }
+
+/* Panelled sheets — two city maps in one frame. Sizes are in viewBox units,
+   so they scale with the map like the hover label does. */
+.panel-rule { stroke: var(--rule); stroke-width: 1.5; }
+.sheet-pin    { fill: var(--accent); }
+
+/* The halo. Invisible over the white sea and doing all its work over the black
+   land, which is exactly where a red hairline is hardest to follow. */
+.sheet-leader-halo {
+  stroke: var(--reveal-color);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.sheet-pin-halo { fill: var(--reveal-color); }
+
+/* The numbered disc and the numbered thumbnail — the narrow layout's stand-in
+   for a polaroid. Both are off on a wide screen, where the photograph itself
+   is hanging on the end of the string. */
+.sheet-badge,
+.card-n { display: none; }
+
+.sheet-leader-halo,
+.sheet-pin-halo {
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.sheet-mark.is-lit .sheet-leader-halo,
+.sheet-mark.is-lit .sheet-pin-halo { opacity: 1; }
+
+/* The frame IS the SVG box, so 0% here is 0 in sheet units. */
+.cards {
+  position: absolute;
+  inset: 0;
+}
+
+/* A pile sits at one pin. Usually it holds a single photograph; where two were
+   taken in the same place it holds both, stacked.
+
+   pointer-events: none on the wrapper, auto on the cards, is what makes the
+   fan below honest — :hover still reaches an ancestor of whatever was hit, so
+   the pile opens when a CARD is under the pointer and not merely when the
+   pointer is inside the pile's bounding box, which with rotated cards is a
+   good deal larger than the cards themselves. */
+.pile {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pile:hover { z-index: 40; }
+
+/* One set of anchors, two layouts. Here they are pinned to the map; below the
+   breakpoint the piles become display: contents and the cards fall into a grid
+   instead. The lightbox album is therefore the region's photographs exactly
+   once, in document order, whichever layout is showing. */
+.card {
+  /* Composed from parts so the fan, the tilt and the hover lift can each be
+     changed without any of them having to restate the others. */
+  --tx: calc(var(--dx, 0) * 1cqw);
+  --ty: calc(var(--dy, 0) * 1cqw);
+  --tr: var(--rot, 0deg);
+  --ts: 1;
+
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--card-w, 11.2) * 1cqw);
+  z-index: var(--z, 1);
+  pointer-events: auto;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
+  text-decoration: none;
+  transform: translate(-50%, -50%) translate(var(--tx), var(--ty))
+             rotate(var(--tr)) scale(var(--ts));
+  transition: transform var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease);
+}
+
+/* The fan. Hovering anywhere in a pile spreads every card in it, symmetrically
+   about the pile's centre, with the outer ones riding up and tilting further —
+   so the one underneath becomes something you can actually aim at. A pile of
+   one has --fx and --fy equal to its resting offset, so nothing happens. */
+.pile:hover > .card,
+.pile:focus-within > .card {
+  --tx: calc(var(--fx, 0) * 1cqw);
+  --ty: calc(var(--fy, 0) * 1cqw);
+  --tr: calc(var(--rot, 0deg) + var(--frot, 0deg));
+}
+
+.card:hover,
+.card:focus-visible {
+  /* Lifts a card clear of its own pile. This works by the cascade because the
+     stacking order arrives as --z rather than as an inline z-index, which
+     would have outranked it. */
+  z-index: 40;
+  --ts: 1.14;
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+}
+
+/* Percentage margins resolve against the containing block's width — the card
+   — so the surround stays proportional as the sheet scales. */
+.card-photo { display: block; margin: 7% 7% 0; }
+
+/* A square crop, whatever the negative was. aspect-ratio only gets to decide a
+   box's second dimension when the other is auto — a specified height anywhere
+   in the cascade means the crop is never applied and the thumbnails come out
+   as strips, which is what the old global img rule in style.css used to do. */
+.card-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.card-cap {
+  display: block;
+  padding: 5% 7% 7%;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: calc(var(--card-w, 11.2) * 0.088 * 1cqw);
+  line-height: 1.3;
+  color: #2a2724;
+}
+
+.card-cap b { display: block; font-weight: 500; }
+.card-cap i { display: block; font-style: italic; color: #6e6a63; }
+
+.atlas-noscript {
+  display: block;
+  margin: 2rem auto;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--size-small);
+  color: var(--atlas-dim);
+  text-align: center;
+}
+
+
+/* The lightbox restyle moved to style.css when naples.html became the
+   second page to use it. Two pages meant two copies, and two copies of a
+   restyle drift. */
+
+/* ── small screens ──
+   800px, not 600. Half a laptop screen: below it the sheet is narrow enough
+   that a photograph pinned to the map is smaller than a postage stamp, and a
+   two-column grid of them is simply the better reading of the same set. It
+   also keeps the frame ladder away from its extreme end, where the cards have
+   the furthest to travel between one solved frame and the next.
+
+   No hover, and no useful target either, so both maps stop being controls and
+   become pictures. The index becomes the navigation and the cards become the
+   grid; the drawings stay, because the whole idea of the page is WHERE. */
+@media (max-width: 800px) {
+  /* The map is a control here too. It was briefly not: the reasoning was that
+     a country a few pixels wide is a poor tap target and there is no hover to
+     label it, so the index below should be the whole navigation. Both halves
+     of that are answered rather than avoided — a touchstart handler in
+     atlas.js lights the country and shows its name on press, the way a cursor
+     does, and the index is still underneath for anything too small to hit.
+     The label comes back with it, for the same reason. */
+
+  /* No height fitting on a phone: the page scrolls, as it should. */
+  .sheet-frame,
+  .map-frame { width: 100%; }
+
+  /* With the frame no longer given a definite height by the fitting rule
+     above, a percentage height has nothing to resolve against. --frame-ar is
+     already on the frame for the desktop sizing, and inherits down to here. */
+  .atlas-svg,
+  .sheet-svg {
+    height: auto;
+    aspect-ratio: var(--frame-ar);
+  }
+
+  /* The head stays on one row here too. The tracks change from 1fr auto 1fr
+     to auto 1fr auto: the wide layout keeps the name optically centred on the
+     page by giving the outer columns equal width, but on a phone that
+     symmetry costs more room than there is. Letting the outer two size to
+     their contents hands the difference to the name. */
+  .region-view {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 0.7rem;
+  }
+
+  /* --size-h2 bottoms out at 1.8rem, which is about 270px of Orbita for
+     "former yugoslavia" — most of a phone's width before the other two
+     have had any. */
+  .region-title {
+    font-size: clamp(1rem, 4.6vw, 1.8rem);
+    margin: 0.6rem 0 var(--atlas-gap);
+  }
+
+  .region-note { font-size: var(--size-caption); }
+
+  /* Rows, as on the wide layout — the base rule already wraps, and forcing a
+     single column here just made fourteen names into a scroll. Two or three
+     per line fits, and the whole index is visible under the map without
+     moving. Tighter gutters than the wide version because there is less room
+     between them, and a little more height on each link so a name is still a
+     comfortable thing to hit with a thumb. */
+  .region-index {
+    gap: 0.35em 1.1em;
+    margin-top: 1.1rem;
+  }
+
+  .region-link { padding: 0.3em 0; }
+
+  /* The whole construction stays — pin, string, and something at the end of
+     it. Only the something changes: a numbered disc where the polaroid was,
+     since the photograph itself has gone to the grid below. Nothing about the
+     geometry moves, so the sheet reads as the wide version at arm's length.
+
+     Everything here is in viewBox units, which are about 0.22px each at a
+     390px phone. These are the numbers to nudge. */
+  .sheet-badge { display: block; cursor: pointer; }
+
+  /* r 46 is a disc of about 20px. The closest two card centres on any sheet
+     are 127 units apart — Milan and Como, about 28px here — so that clears
+     its neighbour with a little air. Much past 60 and they start to touch. */
+  .sheet-badge circle { fill: var(--accent); }
+
+  .sheet-badge text {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 50px;      /* ≈ 11px. Two digits still sit inside the disc. */
+    fill: var(--reveal-color);
+  }
+
+  /* It is a link, so it was arriving with a link's underline — under the
+     numeral, in black, which is neither the palette nor the shape.
+     The hover states are listed because Bootstrap's reboot sets
+     `a:hover { text-decoration: underline }`: specificity (0,1,1) against a
+     bare class's (0,1,0), so a plain .sheet-badge rule loses on hover however
+     late in the file it sits. Matching its pseudo-class settles it. */
+  .sheet-badge,
+  .sheet-badge:hover,
+  .sheet-badge:focus,
+  .sheet-badge:active,
+  .sheet-badge text { text-decoration: none; }
+
+  .sheet-badge:focus { outline: none; }
+
+  /* Pressed: the disc inverts. The ring is not decoration — the card
+     positions sit outside the coastline, so a disc is almost always over the
+     white sea, and a white fill alone would leave the numeral floating with
+     no disc around it at all. The ring keeps the shape while the inside
+     turns white. The string is untouched. */
+  .sheet-badge:hover circle,
+  .sheet-badge:active circle {
+    fill: var(--reveal-color);
+    stroke: var(--accent);
+    stroke-width: 6;
+  }
+
+  .sheet-badge:hover text,
+  .sheet-badge:active text { fill: var(--accent); }
+
+  .sheet-badge circle,
+  .sheet-badge text { transition: fill var(--speed) var(--ease); }
+
+  /* The pin and its string are sized for a sheet a metre wide. Left alone they
+     come out at a 2px dot on the end of a 0.4px hair — present in the DOM,
+     absent from the screen. */
+  .sheet-pin { r: 16; }
+  .sheet-leader { stroke-width: 5; }
+
+  .sheet-svg { margin-bottom: 0.9rem; }
+
+  /* The same badge again, on the thumbnail. Positioned against the photograph
+     rather than the card because on a phone the card has no white surround
+     left to sit in. */
+  .card-photo { position: relative; margin: 0; }
+
+  .card-n {
+    display: block;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--reveal-color);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .cards {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* start, not the default stretch: a card should be as tall as its own
+       photograph and caption, rather than as tall as the tallest card beside
+       it, which leaves the short one with a pool of white under its caption. */
+    align-items: start;
+    gap: 10px;
+  }
+
+  /* Below the breakpoint the stage holds a map AND a grid of cards, so it is
+     as tall as its contents and the page scrolls. Reserving a screen of height
+     for it would open a gap under the last row. */
+  .region-stage {
+    display: block;
+    min-height: 0;
+  }
+
+  /* The frame carries an inline aspect-ratio from atlas.js. Here it holds the
+     silhouette AND the grid of cards below it, so that ratio no longer
+     describes its contents and would squash or stretch them; the ratio moves
+     onto the drawing itself, in the rule near the top of this block. */
+  .sheet-frame { aspect-ratio: auto !important; }
+
+  /* The pile has no job here: the cards are the grid items, so it steps out
+     of the box tree entirely rather than becoming a cell of its own. */
+  .pile { display: contents; }
+
+  .card {
+    position: static;
+    width: auto;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .card:hover,
+  .card:focus-visible { transform: none; box-shadow: none; }
+
+  .card-cap { font-size: var(--size-caption); padding: 0.5em 0.2em 0.8em; }
+
+  /* no room for chevrons beside the photograph on a phone */
+  .lb-nav { left: 0; right: 0; }
+  .lb-nav a.lb-prev,
+  .lb-nav a.lb-next { width: 44px; font-size: 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-hover,
+  .atlas-region,
+  .region-link,
+  .card { transition: none; }
+}
+</style>
+</head>
+
+<body>
+<nav aria-label="main">
+<ul class="nav-bar">
+<li class="nav-link"><a href="/">home</a></li>
+<li class="nav-link"><a href="/mathematics">mathematics</a></li>
+<li class="nav-link"><a href="/gallery" aria-current="page">gallery</a></li>
+</ul>
+</nav>
+
+<div class="gapfillphoto"></div>
+<div class="gapfillphoto"></div>
+
+<main>
+  <!-- The world. Hidden by atlas.js when a region opens; the two sections are
+       swapped in place rather than loaded, and the state lives in the URL hash
+       so the back button and a shared link both work. -->
+  <section id="atlas-world" class="atlas">
+    <div class="atlas-map"><!-- svg injected by atlas.js --></div>
+    <ul class="region-index"><!-- links injected by atlas.js --></ul>
+    <noscript>
+      <p class="atlas-noscript">The map needs JavaScript.</p>
+    </noscript>
+  </section>
+
+  <!-- A region. The sheet is injected into .region-stage. -->
+  <section id="atlas-region" class="region-view" hidden>
+    <a class="region-back" href="#" data-no-smooth-scroll>&larr;&nbsp; gallery</a>
+    <h2 class="region-title" tabindex="-1"></h2>
+    <p class="region-note"></p>
+    <div class="region-stage"></div>
+  </section>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="js/app.js?v=2"></script>
+<script src="js/lightbox.js"></script>
+<script src="data/photos.js?v=28"></script>
+<script src="js/atlas-data.js?v=9"></script>
+<script src="js/atlas-sheets.js?v=31"></script>
+<script src="js/atlas.js?v=25"></script>
+<script src="js/lightbox-init.js?v=1"></script>
+
+</body>
+</html>
