@@ -1965,17 +1965,22 @@ html:has(> body.lb-disable-scrolling) { overflow: hidden; }
 /* --- the landing pile -------------------------------------------------------
    Five polaroids in one spot on the landing page, one on top and the rest
    fanned out behind it. js/landing-pile.js turns it: every few seconds the top
-   card goes to the back and the others each move up a place.
+   card slides off to the side, drops behind, and slides back in under the
+   others, and they each move up a place.
 
    The one pile on the site that moves, and the reason is the one the note on
    .polaroid gives for the atlas's piles fanning: four of these photographs are
    hidden behind the fifth, and the turning is what brings them out.
 
+   Named .landing-pile, not .pile: gallery.html already has a .pile (the atlas
+   piles), and this stylesheet loads there too. A shared name made this block
+   resize every card on the region sheets.
+
    Every card's place in the pile is a single number, --rel: 0 on top, 1 under
-   it, and so on. Everything else here is worked out from that number, so the
-   script only has to count, and the movement is the transition between one
-   set of numbers and the next. */
-.pile {
+   it, and so on. Everything else here is worked out from that number and the
+   card's own tilt, so the script mostly has to count, and the movement is the
+   transition between one set of numbers and the next. */
+.landing-pile {
   /* Card height ÷ card width. The 6% top border, the 4:5 picture on the 88%
      left between the side borders (1.10), and the 24% band: 0.06 + 1.10 +
      0.24. The sizing below and the band height both depend on it — change the
@@ -1991,70 +1996,117 @@ html:has(> body.lb-disable-scrolling) { overflow: hidden; }
   --fan-turn: -2.5deg;
   --fan-shrink: 0.015;
 
-  /* The top card's resting tilt, which the whole fan is turned by. A
-     polaroid on this site never lies square. */
+  /* The top card's resting tilt, which the whole fan is turned by. Each card
+     then adds its own (--own-*, below), so no two turns leave the same fan. */
   --pile-rest: 1.2deg;
 
-  /* Width cap: the shared measure while the page is stacked, the whole column
-     on a wide screen (the block at the foot of this section). */
-  --pile-max: var(--measure);
+  /* The tuck. How far the top card turns and rises as it is pulled off (its
+     sideways distance, --leave-x, is set by the script from the room there
+     is), how long that takes, and how long it takes to slide back in under
+     the pile. The script reads both durations from here, so they are only
+     ever written once. Together they are the length of a turn; the stillness
+     between turns is in the script. */
+  --leave-x: 60;          /* a default only; the script sets each turn's */
+  --leave-turn: 6deg;
+  --leave-lift: -3;
+  --leave-ms: 420;
+  --return-ms: 600;
 
   position: relative;
   flex: none;
   /* The largest card that fits the slot both ways. 100cqh / --pile-h is the
      width at which the card is exactly as tall as the slot; 96% of it leaves
-     room for the back cards rising above the top one. */
-  width: min(var(--pile-max), calc(96cqh / var(--pile-h)));
+     room for the back cards rising above the top one. (Wide screens only —
+     on a phone the page scrolls and the pile has a set size; see the foot of
+     this section.) */
+  width: min(100%, calc(96cqh / var(--pile-h)));
   aspect-ratio: 1 / var(--pile-h);
 
-  /* The cards measure their offsets and caption against this box (cqi), so
-     the whole pile scales as one thing: fan, band and type together. */
-  container-type: inline-size;
+  /* The cards measure their offsets, corners and caption against this box
+     (cqi), so the whole pile scales as one thing. Named, so the caption's
+     container query below cannot match some other container by accident. */
+  container: landing-pile / inline-size;
 }
 
-.pile .pile-card {
+.landing-pile .landing-card {
+  /* This card's own tilt and nudge, carried with it through every place in
+     the pile (set per photograph below). */
+  --own-rot: 0deg;
+  --own-x: 0;
+  --own-y: 0;
+
   position: absolute;
   inset: 0;
   margin: 0;
 
+  /* A real print's corners are rounded a little; the picture's are not. */
+  border-radius: 1.2cqi;
+
   /* Pivot at the bottom edge, so a card further back swings its top out
-     sideways and its foot stays roughly where it was — the edges showing
-     behind the top card are the top corners. */
+     sideways and its foot stays roughly where it was. */
   transform-origin: 50% 100%;
   transform:
-    translate(calc(var(--rel) * var(--fan-step) * 1cqi),
-              calc(var(--rel) * var(--fan-step) * -1cqi))
-    rotate(calc(var(--pile-rest) + var(--rel) * var(--fan-turn)))
+    translate(calc((var(--rel) * var(--fan-step) + var(--own-x)) * 1cqi),
+              calc((var(--rel) * var(--fan-step) * -1 + var(--own-y)) * 1cqi))
+    rotate(calc(var(--pile-rest) + var(--own-rot) + var(--rel) * var(--fan-turn)))
     scale(calc(1 - var(--rel) * var(--fan-shrink)));
-
-  /* Not transitioned, on purpose. When the top card goes to the back it drops
-     behind the others at once, then glides into the rear place — it goes
-     under the pile rather than through it. */
   z-index: calc(10 - var(--rel));
 
-  /* Slower than --speed: that is the site's speed for answering a pointer,
-     and nobody asked for this. */
-  transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
-              opacity 500ms ease;
+  /* Its own compositing layer from the start, so a turn only moves layers
+     that already exist rather than creating them on the first frame. */
+  will-change: transform, opacity;
+
+  /* The base transition is the slide back in under the pile, and also what
+     the other cards use to move up a place. */
+  transition: transform calc(var(--return-ms) * 1ms) cubic-bezier(0.25, 0.6, 0.3, 1),
+              opacity 220ms ease-out;
+}
+
+/* Each photograph's own tilt and nudge, whatever place it is in. The strips'
+   five angles, at about two thirds strength: enough that the fan is never
+   evenly spaced, not so much that the top card looks dropped. Any card can be
+   overridden in the markup, e.g. style="--own-rot: 0.8deg". */
+.landing-pile .landing-card:nth-child(5n + 1) { --own-rot: -1.4deg; --own-x:  0.3; --own-y:  0.2; }
+.landing-pile .landing-card:nth-child(5n + 2) { --own-rot:  1.0deg; --own-x: -0.5; --own-y:  0.6; }
+.landing-pile .landing-card:nth-child(5n + 3) { --own-rot: -0.7deg; --own-x:  0.7; --own-y: -0.4; }
+.landing-pile .landing-card:nth-child(5n + 4) { --own-rot:  1.6deg; --own-x: -0.2; --own-y: -0.7; }
+.landing-pile .landing-card:nth-child(5n + 5) { --own-rot: -1.1deg; --own-x:  0.5; --own-y:  0.4; }
+
+/* The starting order, first in the markup on top. The script overwrites
+   these inline; without it, this is how the pile stays. */
+.landing-pile .landing-card:nth-child(1) { --rel: 0; }
+.landing-pile .landing-card:nth-child(2) { --rel: 1; }
+.landing-pile .landing-card:nth-child(3) { --rel: 2; }
+.landing-pile .landing-card:nth-child(4) { --rel: 3; }
+.landing-pile .landing-card:nth-child(5) { --rel: 4; }
+
+/* The tuck, first half: the top card pulled off to the side. Still above the
+   pile, turned and lifted a little as a hand would, and slightly see-through
+   by the far end — which is the one moment it changes from above the pile to
+   below it, and whatever of it still overlaps the pile would otherwise vanish
+   in a single frame. Second half: the script removes this, the card takes its
+   new place at the back (so its z-index drops behind the others), and the base
+   transition slides it back in underneath. */
+.landing-pile .landing-card[data-leaving="true"] {
+  z-index: 20;
+  opacity: 0.55;
+  transform:
+    translate(calc(var(--leave-x) * 1cqi), calc(var(--leave-lift) * 1cqi))
+    rotate(calc(var(--pile-rest) + var(--own-rot) + var(--leave-turn)))
+    scale(1.02);
+  transition: transform calc(var(--leave-ms) * 1ms) cubic-bezier(0.35, 0, 0.55, 1),
+              opacity calc(var(--leave-ms) * 1ms) cubic-bezier(0.8, 0, 1, 0.6);
 }
 
 /* .polaroid's pick-it-up on hover belongs to a card you can open. These are
    not links, so pointing at the pile only pauses it (in the script). The
    shadow is restated at the hover's specificity so it stays put too. */
-.pile .pile-card:hover {
+.landing-pile .landing-card:hover {
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
 }
 
-/* The starting order, first in the markup on top. The script overwrites
-   these inline; without it, this is how the pile stays. */
-.pile .pile-card:nth-child(1) { --rel: 0; }
-.pile .pile-card:nth-child(2) { --rel: 1; }
-.pile .pile-card:nth-child(3) { --rel: 2; }
-.pile .pile-card:nth-child(4) { --rel: 3; }
-.pile .pile-card:nth-child(5) { --rel: 4; }
-
 /* The picture, as on the grounds and city strips: 4:5, square corners. */
-.pile .pile-card img {
+.landing-pile .landing-card img {
   display: block;
   width: 100%;
   height: auto;
@@ -2066,33 +2118,75 @@ html:has(> body.lb-disable-scrolling) { overflow: hidden; }
 
 /* The band. A fixed height rather than padding round the text, because
    --pile-h has to be known without measuring anything. Two lines, set as the
-   gallery's cards set them: the place, then the country and year. */
-.pile .polaroid-cap {
+   gallery's cards set them: the place, then the country and year.
+
+   The type scales with the card and nothing else, and neither line may wrap:
+   a third line would spill out of the band, and on the cards behind it spills
+   out below the top card's band. */
+.landing-pile .polaroid-cap {
   height: 24cqi;
   padding: 0 4% 1.5cqi;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  font-size: clamp(0.62rem, 4.4cqi, 1.05rem);
+  font-size: min(4.4cqi, 1.05rem);
 }
 
-.pile .polaroid-cap b { display: block; font-weight: 500; }
-.pile .polaroid-cap i { display: block; font-style: italic; color: #6e6a63; }
-
-/* Wide screen: the pile may use the whole width of its column. Here rather
-   than in the WIDE SCREENS block, which sits earlier in the file than .pile
-   and would lose to it at equal specificity. */
-@media (min-width: 900px) {
-  .pile { --pile-max: 100%; }
+.landing-pile .polaroid-cap b,
+.landing-pile .polaroid-cap i {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Reduced motion: no fan and no gliding. The cards lie on top of one another
-   and the script's turns become a crossfade — only the top card is showing. */
+.landing-pile .polaroid-cap b { font-weight: 500; }
+.landing-pile .polaroid-cap i { font-style: italic; color: #6e6a63; }
+
+/* Below about 200px a card's caption would be under 9px, which is not
+   writing so much as texture. The band stays; the words go. With the phone
+   layout below this should now only happen on a very short wide window. */
+@container landing-pile (max-width: 200px) {
+  .polaroid-cap b,
+  .polaroid-cap i { visibility: hidden; }
+}
+
+/* Below the wide layout the landing page scrolls, like every other page.
+   Kept to one screen on a phone, the photograph got whatever height the
+   masthead and paragraph left, which came to about 120px; here it takes a set
+   share of the width instead, and the paragraph goes below it. The wide
+   layout is untouched: still one screen, still the pile filling its column. */
+@media (max-width: 899.98px) {
+  body.landing {
+    height: auto;
+    min-height: 100%;
+    overflow-y: visible;
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  body.landing .page-wrapper { height: auto; }
+
+  body.landing .content,
+  .landing-body { flex: none; }
+
+  body.landing .backgroundimage {
+    flex: none;
+    container-type: normal;      /* no longer sized by the space left over */
+    padding: 1.25rem 0 0.75rem;  /* the fan rises above the top card */
+  }
+
+  .landing-pile { width: min(62vw, 20rem); }
+}
+
+/* Reduced motion: no fan and no tuck. The cards lie on top of one another
+   and each turn is a crossfade — only the top card is showing. The script
+   skips the tuck here, so this is all there is to it. */
 @media (prefers-reduced-motion: reduce) {
-  .pile .pile-card {
-    transform: rotate(var(--pile-rest));
+  .landing-pile .landing-card {
+    transform: rotate(calc(var(--pile-rest) + var(--own-rot)));
     opacity: 0;
     transition: opacity 500ms ease;
   }
-  .pile .pile-card[data-top="true"] { opacity: 1; }
+  .landing-pile .landing-card[data-top="true"] { opacity: 1; }
 }
