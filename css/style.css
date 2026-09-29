@@ -201,14 +201,23 @@ body.landing, html.landing {
 }
 
 body.landing .backgroundimage {
-    /* Now just a slot that centres the photograph. It takes whatever vertical
-       space is left over, and the picture fits itself inside. */
+    /* A slot that centres the pile. It takes whatever vertical space is left
+       over, and the pile fits itself inside.
+
+       A size container, which is what lets the pile size itself. The old
+       photograph was a replaced element and could keep its proportions with
+       two maxima; a pile of positioned cards has no size of its own to keep,
+       so it reads this box's width and height (cqw, cqh) and works out the
+       largest card that fits instead. Size containment means the slot must
+       not take its size from what is in it — it does not: it is a flex item
+       with a zero basis, sized entirely by the space left over. */
     flex: 1 1 0;
     min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(var(--shell) + var(--reveal));   /* room for the frame rings */
+    container-type: size;
+    padding: 0.5rem;
 }
 
 /* <picture> is a wrapper with no box of its own to speak of. Left as a normal
@@ -218,40 +227,6 @@ body.landing .backgroundimage {
    the img stays a direct flex child of the slot. */
 picture {
     display: contents;
-}
-
-.landing-photo {
-    display: block;
-    /* Both maxima, no width or height: a replaced element shrinks to satisfy
-       whichever binds while keeping its own proportions. So the whole picture
-       is always visible and never distorted, at the largest size that fits. */
-    max-width: var(--measure);
-    max-height: 100%;
-    width: auto;
-    height: auto;
-
-    /* No minimum on either axis, and there cannot be one here.
-
-       A replaced element keeps its proportions only while it is free to. Two
-       maxima leave it free: whichever binds first stops the growth and the
-       other is slack. Add a minimum on one axis against a maximum on the
-       other and both must be satisfied at once — a width of at least this and
-       a height of at most that — and the only way to do it is to abandon the
-       aspect ratio. That is the squash: not a small photograph but a stretched
-       one, which is worse.
-
-       If the portrait comes out too small, the height it is given is the thing
-       to change — the masthead, the paragraph, the footer — not a floor under
-       the picture. */
-    border-radius: max(0px, calc(var(--radius) - var(--shell) - var(--reveal)));
-
-    /* The window as two shadow rings rather than border + padding. Shadows sit
-       outside layout, so the image is still free to size itself — and each
-       ring's corner radius grows with its spread, which keeps the three curves
-       concentric with no arithmetic. */
-    box-shadow:
-        0 0 0 var(--reveal) var(--reveal-color),
-        0 0 0 calc(var(--reveal) + var(--shell)) var(--accent);
 }
 
 body.landing .content {
@@ -1561,11 +1536,6 @@ img {
     body.landing .backgroundimage {
         grid-area: photo;
         height: 100%;
-        padding: calc(var(--shell) + var(--reveal));
-    }
-
-    .landing-photo {
-        max-width: 100%;
     }
 
     /* Room to use the wider column. Still short of 90 characters, which was
@@ -1990,4 +1960,139 @@ html:has(> body.lb-disable-scrolling) { overflow: hidden; }
     gap: calc(var(--reveal) * 2.5);
   }
   .map-frame { flex: none; width: 100%; }
+}
+
+/* --- the landing pile -------------------------------------------------------
+   Five polaroids in one spot on the landing page, one on top and the rest
+   fanned out behind it. js/landing-pile.js turns it: every few seconds the top
+   card goes to the back and the others each move up a place.
+
+   The one pile on the site that moves, and the reason is the one the note on
+   .polaroid gives for the atlas's piles fanning: four of these photographs are
+   hidden behind the fifth, and the turning is what brings them out.
+
+   Every card's place in the pile is a single number, --rel: 0 on top, 1 under
+   it, and so on. Everything else here is worked out from that number, so the
+   script only has to count, and the movement is the transition between one
+   set of numbers and the next. */
+.pile {
+  /* Card height ÷ card width. The 6% top border, the 4:5 picture on the 88%
+     left between the side borders (1.10), and the 24% band: 0.06 + 1.10 +
+     0.24. The sizing below and the band height both depend on it — change the
+     band and change this with it. */
+  --pile-h: 1.40;
+
+  /* Each step back: this far up and to the right (in % of the card width),
+     this much more anticlockwise, and this much smaller. At five cards the
+     back one is 6.4% over, 10° round from the top card, and at 94% size.
+     The photographs behind are covered; what shows is their white borders,
+     so the turn has to be big enough for those to read as separate cards. */
+  --fan-step: 1.6;
+  --fan-turn: -2.5deg;
+  --fan-shrink: 0.015;
+
+  /* The top card's resting tilt, which the whole fan is turned by. A
+     polaroid on this site never lies square. */
+  --pile-rest: 1.2deg;
+
+  /* Width cap: the shared measure while the page is stacked, the whole column
+     on a wide screen (the block at the foot of this section). */
+  --pile-max: var(--measure);
+
+  position: relative;
+  flex: none;
+  /* The largest card that fits the slot both ways. 100cqh / --pile-h is the
+     width at which the card is exactly as tall as the slot; 96% of it leaves
+     room for the back cards rising above the top one. */
+  width: min(var(--pile-max), calc(96cqh / var(--pile-h)));
+  aspect-ratio: 1 / var(--pile-h);
+
+  /* The cards measure their offsets and caption against this box (cqi), so
+     the whole pile scales as one thing: fan, band and type together. */
+  container-type: inline-size;
+}
+
+.pile .pile-card {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+
+  /* Pivot at the bottom edge, so a card further back swings its top out
+     sideways and its foot stays roughly where it was — the edges showing
+     behind the top card are the top corners. */
+  transform-origin: 50% 100%;
+  transform:
+    translate(calc(var(--rel) * var(--fan-step) * 1cqi),
+              calc(var(--rel) * var(--fan-step) * -1cqi))
+    rotate(calc(var(--pile-rest) + var(--rel) * var(--fan-turn)))
+    scale(calc(1 - var(--rel) * var(--fan-shrink)));
+
+  /* Not transitioned, on purpose. When the top card goes to the back it drops
+     behind the others at once, then glides into the rear place — it goes
+     under the pile rather than through it. */
+  z-index: calc(10 - var(--rel));
+
+  /* Slower than --speed: that is the site's speed for answering a pointer,
+     and nobody asked for this. */
+  transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              opacity 500ms ease;
+}
+
+/* .polaroid's pick-it-up on hover belongs to a card you can open. These are
+   not links, so pointing at the pile only pauses it (in the script). The
+   shadow is restated at the hover's specificity so it stays put too. */
+.pile .pile-card:hover {
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
+}
+
+/* The starting order, first in the markup on top. The script overwrites
+   these inline; without it, this is how the pile stays. */
+.pile .pile-card:nth-child(1) { --rel: 0; }
+.pile .pile-card:nth-child(2) { --rel: 1; }
+.pile .pile-card:nth-child(3) { --rel: 2; }
+.pile .pile-card:nth-child(4) { --rel: 3; }
+.pile .pile-card:nth-child(5) { --rel: 4; }
+
+/* The picture, as on the grounds and city strips: 4:5, square corners. */
+.pile .pile-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 0;
+  background-color: var(--rule);
+}
+
+/* The band. A fixed height rather than padding round the text, because
+   --pile-h has to be known without measuring anything. Two lines, set as the
+   gallery's cards set them: the place, then the country and year. */
+.pile .polaroid-cap {
+  height: 24cqi;
+  padding: 0 4% 1.5cqi;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: clamp(0.62rem, 4.4cqi, 1.05rem);
+}
+
+.pile .polaroid-cap b { display: block; font-weight: 500; }
+.pile .polaroid-cap i { display: block; font-style: italic; color: #6e6a63; }
+
+/* Wide screen: the pile may use the whole width of its column. Here rather
+   than in the WIDE SCREENS block, which sits earlier in the file than .pile
+   and would lose to it at equal specificity. */
+@media (min-width: 900px) {
+  .pile { --pile-max: 100%; }
+}
+
+/* Reduced motion: no fan and no gliding. The cards lie on top of one another
+   and the script's turns become a crossfade — only the top card is showing. */
+@media (prefers-reduced-motion: reduce) {
+  .pile .pile-card {
+    transform: rotate(var(--pile-rest));
+    opacity: 0;
+    transition: opacity 500ms ease;
+  }
+  .pile .pile-card[data-top="true"] { opacity: 1; }
 }
