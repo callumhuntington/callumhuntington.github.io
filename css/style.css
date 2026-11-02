@@ -558,6 +558,11 @@ img {
   color: #6e6e6e;
 }
 
+.education-left .thesis {
+  font-weight: var(--weight-body);
+  color: #6e6e6e;
+}
+
 .education-right {
   white-space: nowrap;
   margin-left: auto;             /* push to far right */
