@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Русский — Упражнения</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Русский">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="js/icons.js"></script>
+<script src="js/common.js"></script>
+<script src="data/bank.js"></script>
+<script src="data/reading.js"></script>
+<script src="data/verbs.js"></script>
+<script src="data/names.js"></script>
+<script src="js/names-bank.js"></script>
+<script>
+// Упражнения: every exercise type across all topics, plus reading, verbs and names.
+const main = BANK.filter(i => i.topic !== 'penguin');
+$('#app').innerHTML = header('Упражнения', '') +
+  `<section class="box">${sectionHead(0, 'По типам', 'Выберите упражнение.', 'questions from every topic')}
+    <div class="list">${TYPES.map((ty, n) => {
+      const its = main.filter(i => i.type === ty.id);
+      return `<a class="item" href="quiz.html#x-${ty.id}">
+        <span class="n">${n + 1}.</span>
+        <div class="t"><div class="nm"><span class="ru">${esc(ty.title)}</span> <span class="dim">${esc(ty.en)} · ${its.length}</span></div>
+        ${bar(progress(NS, its.map(i => i.id)))}</div>${icon('next', 'ic go')}</a>`;
+    }).join('')}</div></section>` +
+  card('reading.html', 'reading', 'Чтение', `${PASSAGES.length} texts: pick one or get a random one, then answer questions.`) +
+  card('russian_verb_conjugator.html', 'verbs', 'Глаголы', `Type the present tense: 3 verbs from ${VERBS.length}.`) +
+  card('names.html', 'names', 'Имена', 'Short forms of names and patronymics: 10 typed questions.',
+    bar(progress(NAMES_NS, buildNameQuestions().map(q => q.key))));
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Русский — Чтение</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Русский">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="js/icons.js"></script>
+<script src="js/common.js"></script>
+<script src="data/reading.js"></script>
+<script>
+// Reading: one dialogue, tap dotted words for their meaning, then answer 4 questions from its bank.
+const PER_ROUND = 4;
+let queue = [], p = null, qs = [], done = 0, right = 0;
+// No hash: the list of texts. #random: random texts. #i-<id>: one text opened from the list.
+// #p-<id>: one text opened from its topic. #t-<topic>: that topic's texts.
+const H = location.hash;
+const fromList = /^#(i-|random)/.test(H);
+const want = (H.match(/[pi]-([a-z_]+)/) || [])[1];
+const tWant = (H.match(/t-([a-z]+)/) || [])[1] || (!fromList && (PASSAGES.find(x => x.id === want) || {}).topic);
+window.onhashchange = () => location.reload();
+const back = fromList ? ['reading.html', 'Тексты'] : want || tWant ? [`topic.html#t-${tWant}`, 'Тема'] : ['exercises.html', 'Упражнения'];
+const MAIN = PASSAGES.filter(x => x.topic !== 'penguin');
+const POOL = tWant ? PASSAGES.filter(x => x.topic === tWant) : MAIN;
+
+function showList() {
+  const row = (x, n) => `<a class="item" href="reading.html#i-${x.id}"><span class="n">${n + 1}.</span>
+    <div class="t"><div class="nm"><span class="ru">${esc(x.title)}</span> <span class="dim">${esc(x.difficulty || '')}</span></div></div>${icon('next', 'ic go')}</a>`;
+  const pen = PASSAGES.filter(x => x.topic === 'penguin');
+  $('#app').innerHTML = header('Чтение', `${PASSAGES.length} texts`, 'exercises.html', 'Упражнения') + `
+    <section class="box">${sectionHead(0, 'Тексты', 'Выберите текст.', 'or let the app pick one')}
+      <div class="btns centre" style="margin:0 0 12px"><a class="btn" href="reading.html#random">${icon('review')}Случайный текст</a></div>
+      <div class="list">${MAIN.map(row).join('')}</div></section>
+    <section class="box">${sectionHead(0, 'Penguin', '', 'texts from the Penguin course')}
+      <div class="list">${pen.map(row).join('')}</div></section>`;
+}
+
+function nextPassage(first) {
+  if (first && want && PASSAGES.find(x => x.id === want)) p = PASSAGES.find(x => x.id === want);
+  else {
+    if (!queue.length) queue = shuffle(POOL.map((_, i) => i)).filter(i => POOL[i] !== p);
+    p = POOL[queue.shift()];
+  }
+  // Shuffle each question's options (true/false stays in order) and keep track of the right one.
+  qs = shuffle(p.questions).slice(0, PER_ROUND).map(q => {
+    if (q.opts[0] === 'Правда') return q;
+    const order = shuffle(q.opts.map((_, i) => i));
+    return { q: q.q, opts: order.map(i => q.opts[i]), a: order.indexOf(q.a) };
+  });
+  done = 0; right = 0;
+  show();
+}
+
+// Wrap words that have a gloss; keep punctuation outside the dotted underline.
+function lineHtml(text) {
+  return text.split(/(\s+)/).map(tok => {
+    if (/^\s+$/.test(tok)) return tok;
+    const m = tok.match(/^([«"(—]*)([а-яёА-ЯЁa-zA-Z-]+)(.*)$/);
+    if (!m) return esc(tok);
+    const word = m[2].replace(/^-+|-+$/g, '');
+    const g = p.vocab && p.vocab[word.toLowerCase()];
+    return g ? `${esc(m[1])}<span class="gw" data-w="${esc(m[2])}" data-g="${esc(g)}">${esc(m[2])}</span>${esc(m[3])}` : esc(tok);
+  }).join('');
+}
+
+function show() {
+  $('#app').innerHTML = header('Чтение', '', back[0], back[1]) + `
+    <section class="box passage">
+      ${sectionHead(1, 'Текст', 'Прочитайте диалог.', 'tap a dotted word for its meaning')}
+      <div class="title ru">${esc(p.title)}</div>
+      <div class="intro">${esc(p.intro || '')}</div>
+      ${p.dialogue.map(l => `<div class="dl"><span class="sp">${esc(l.speaker)}</span><span class="ru">${lineHtml(l.text)}</span></div>`).join('')}
+      <div class="gloss" id="gloss">Tap a dotted word to see what it means.</div>
+    </section>
+    <section class="box">
+      ${sectionHead(2, 'Вопросы', 'Выберите ответ.', 'choose the answer')}
+      ${qs.map((q, qi) => `
+        <div class="qn"><span class="n">${qi + 1}.</span><span>${t(q.q)}</span></div>
+        <div class="opts${q.opts.some(o => o.length > 16) ? ' one' : ''}" data-q="${qi}">
+          ${q.opts.map((o, oi) => `<button class="opt" data-o="${oi}"><span class="l">${'abcd'[oi]})</span>${t(o)}</button>`).join('')}
+        </div>`).join('')}
+    </section>
+    <div id="end"></div>`;
+  $$('.gw').forEach(w => w.onclick = () => {
+    $$('.gw.on').forEach(x => x.classList.remove('on'));
+    w.classList.add('on');
+    $('#gloss').innerHTML = `<span class="ru">${esc(w.dataset.w)}</span><span class="en">${esc(w.dataset.g)}</span>`;
+  });
+  $$('.opts').forEach(box => {
+    const q = qs[+box.dataset.q];
+    $$('.opt', box).forEach(b => b.onclick = () => {
+      const oi = +b.dataset.o, ok = oi === q.a;
+      box.classList.add('done');
+      $$('.opt', box).forEach((x, i) => { x.disabled = true; if (i === q.a) x.classList.add('right'); else if (i === oi) x.classList.add('wrong'); });
+      done++; if (ok) right++;
+      setMeta(`${right} / ${done}`);
+      if (done === qs.length) setTimeout(finish, 500);
+    });
+  });
+}
+
+function finish() {
+  const keys = (p.keywords || []).map(k => `<span class="kw"><span class="ru">${esc(k.rus)}</span> <span class="dim">${esc(k.eng)}</span></span>`).join('<span class="sep">·</span>');
+  $('#end').innerHTML = (keys ? `<section class="box">${sectionHead(3, 'Слова', 'Ключевые слова.', 'key words from the text')}<div class="keys">${keys}</div></section>` : '')
+    + resultsBox(right, qs.length, back[0], back[1]);
+  $('#again').innerHTML = `${icon('next')}Новый текст`;
+  $('#again').onclick = () => { nextPassage(); window.scrollTo(0, 0); };
+  $('#end').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+if (!H || H === '#') showList(); else nextPassage(true);
+</script>
+</body>
+</html>

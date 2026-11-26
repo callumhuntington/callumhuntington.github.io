@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Русский</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Русский">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="js/icons.js"></script>
+<script src="js/common.js"></script>
+<script src="data/bank.js"></script>
+<script>
+// Question runner. #review = daily mix · #t-<topic> = one topic · #x-<type> = one exercise type · #t-<topic>-x-<type> = both.
+const TY = Object.fromEntries(TYPES.map(x => [x.id, x]));
+const TO = Object.fromEntries(TOPICS.map(x => [x.id, x]));
+const h = location.hash.slice(1);
+const topic = (h.match(/t-([a-z]+)/) || [])[1];
+const type = (h.match(/x-([a-z]+)/) || [])[1];
+const review = !topic && !type;
+window.onhashchange = () => location.reload();
+
+const pool = BANK.filter(i => (topic ? i.topic === topic : i.topic !== 'penguin') && (!type || i.type === type));
+const ROUND = Math.min(20, pool.length);
+const typeCount = {};
+pool.forEach(i => typeCount[i.type] = (typeCount[i.type] || 0) + 1);
+
+const title = review ? 'Повторить' : type && !topic ? TY[type].title : TO[topic].title;
+const back = topic ? [`topic.html#t-${topic}`, 'Тема'] : type ? ['exercises.html', 'Упражнения'] : ['index.html', 'Русский'];
+
+let round = [], idx = 0, score = 0;
+
+function weight(it, sc) {
+  // Mixed rounds even out the exercise types, so word questions don't crowd out the rest.
+  const balance = type ? 1 : 1 / Math.sqrt(typeCount[it.type]);
+  if (review) return balance * (sc === undefined ? 2 : sc < 3 ? 8 : [6, 5, 4, 3, 2, 1][sc]);
+  return balance * scoreWeight(sc);
+}
+
+function start() {
+  round = weightedSample(pool, ROUND, i => i.id, NS, weight);
+  idx = 0; score = 0;
+  show(); window.scrollTo(0, 0);
+}
+
+const gap = s => stress(s).replace('___', '<span class="gap"></span>');
+
+function promptHtml(it) {
+  const p = it.p;
+  let body = '';
+  if (p.ticket) body += `<div class="ticket">${p.ticket.split(' · ').map(r => `<div>${esc(r)}</div>`).join('')}</div>`;
+  if (p.color) body += `<span class="swatch" style="background:${p.color}"></span>`;
+  else if (p.flag) body += `<span class="flag ${p.dir === 'v' ? 'v' : 'h'}">${p.flag.map(c => `<i style="background:${c}"></i>`).join('')}</span>`;
+  else if (p.icon) body += `<span class="pic">${ICONS[p.icon] || ''}</span>`;
+  else if (p.lines) body += `<div class="lines">${p.lines.map(([sp, tx]) =>
+    `<div class="dl"><span class="sp">${stress(sp)}</span><span class="ru">${gap(tx)}</span></div>`).join('')}</div>`;
+  else if (p.hw) body += `<span class="hw">${esc(p.hw)}</span>`;
+  else if (p.big) body += `<span class="big">${esc(p.big)}</span>`;
+  else if (p.gap) { const [x, y] = p.gap.split('{}');
+    body += `<span class="ru gapline${plain(p.gap).length > 18 ? ' long' : ''}">${stress(x)}<input class="end-in" id="end" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" lang="ru" enterkeyhint="done" aria-label="ending">${stress(y)}</span>`; }
+  else if (p.ru) body += `<span class="ru${plain(p.ru).length > 22 ? ' long' : ''}">${gap(p.ru)}</span>`;
+  else if (p.en) body += `<span class="en${p.en.length > 40 ? ' long' : ''}">${esc(p.en)}</span>`;
+  if (p.sub) body += `<span class="ctx">${t(p.sub)}</span>`;
+  return body;
+}
+
+function show() {
+  const it = round[idx], ty = TY[it.type];
+  const order = it.fixed ? it.o.map((_, i) => i) : shuffle(it.o.map((_, i) => i));
+  const one = it.o.some(o => plain(o).length > 14);
+  $('#app').innerHTML = header(title, `${idx + 1} / ${round.length}`, back[0], back[1]) + '<div class="track"><i></i></div>' + `
+    <section class="box">
+      ${sectionHead(idx + 1, ty.title, ty.ru, ty.instr)}
+      <div class="prompt">${promptHtml(it)}</div>
+      ${it.typed ? `<div class="typed-hint" id="hint">Type the ending, then press Проверить.</div>
+      <div class="btns centre" id="checkrow"><button class="btn" id="check">${icon('tick')}Проверить</button></div>` : `
+      <div class="opts${one ? ' one' : ''}">
+        ${order.map((oi, k) => `<button class="opt" data-i="${oi}"><span class="l">${'abcd'[k]})</span>${t(it.o[oi])}</button>`).join('')}
+      </div>`}
+      <div id="after"></div>
+    </section>
+    ${review || !topic ? `<p class="foot">Тема: ${esc(TO[it.topic].title)}</p>` : ''}`;
+  setTrack((idx + 1) / round.length);
+  $$('.opt').forEach(b => b.onclick = () => answer(+b.dataset.i));
+  if (it.typed) {
+    const inp = $('#end');
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); checkTyped(); } };
+    $('#check').onclick = checkTyped;
+    try { inp.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  }
+}
+
+// Typed endings: accept the ending on its own or the whole adjective; ё counts as е.
+const norm = s => s.trim().toLowerCase().replace(/ё/g, 'е').replace(/^[-–—_\s]+/, '');
+function checkTyped() {
+  const it = round[idx], inp = $('#end');
+  if (!inp || inp.disabled) return;
+  const v = norm(inp.value);
+  if (!v) { inp.focus(); return; }
+  if (/[a-z]/i.test(v)) { $('#hint').innerHTML = '<span class="red">That looks like English letters: switch to the Russian keyboard.</span>'; inp.focus(); return; }
+  const want = norm(it.o[0]);
+  const stemWord = norm(plain(it.p.gap.split('{}')[0]).split(/\s+/).pop());
+  const ok = v === want || v === stemWord + want;
+  inp.disabled = true; inp.blur();
+  const shown = document.createElement('span');
+  shown.className = 'end ' + (ok ? 'ok' : 'no');
+  shown.innerHTML = ok ? esc(it.o[0]) : `<s>${esc(inp.value.trim())}</s>${esc(it.o[0])}`;
+  inp.replaceWith(shown);
+  $('#hint').remove(); $('#checkrow').remove();
+  answer(ok ? 0 : -1);
+}
+
+function answer(choice) {
+  const it = round[idx], ok = choice === it.a;
+  if (ok) score++;
+  bump(NS, it.id, ok);
+  if ($('.opts')) $('.opts').classList.add('done');
+  $$('.opt').forEach(b => {
+    b.disabled = true;
+    const i = +b.dataset.i;
+    if (i === it.a) b.classList.add('right'); else if (i === choice) b.classList.add('wrong');
+  });
+  const rows = [];
+  if (it.full) rows.push([ok ? 'Полностью' : 'Правильно', t(it.full)]);
+  if (it.note) rows.push(['Заметка', t(it.note)]);
+  if (it.tr) rows.push(['Перевод', `<span class="en">${esc(it.tr)}</span>`]);
+  if (it.ex) { const [ru, en] = splitEx(it.ex); rows.push(['Пример', `${t(ru)}${en ? ` <span class="en">— ${esc(en)}</span>` : ''}`]); }
+  if (it.p.lines) rows.push(['Диалог', it.p.lines.map(([sp, tx]) => `<span class="red">${stress(sp)}</span> ${t(tx.replace('___', it.o[it.a]))}`).join('<br>')]);
+  const last = idx === round.length - 1;
+  $('#after').innerHTML = `
+    <div class="fb ${ok ? 'ok' : 'no'}">${icon(ok ? 'tick' : 'cross')}<span>${ok ? 'Правильно!' : it.typed ? `The ending is ${t('-' + it.o[0])}` : `The answer is ${t(it.o[it.a])}`}</span></div>
+    ${rows.length ? `<div class="info">${rows.map(([l, v]) => `<div><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}</div>` : ''}
+    <div class="btns"><button class="btn" id="next">${last ? 'Итог' : 'Дальше'}${icon('next')}</button></div>`;
+  $('#next').onclick = next;
+  if (it.typed) $('#next').focus({ preventScroll: true });
+  $('#next').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function next() {
+  idx++;
+  if (idx < round.length) { show(); window.scrollTo(0, 0); return; }
+  $('#app').innerHTML = header(title, `${score} / ${round.length}`, back[0], back[1]) + resultsBox(score, round.length, back[0], back[1]);
+  $('#again').onclick = start;
+}
+
+if (!pool.length) $('#app').innerHTML = header(title, '', back[0], back[1]) + '<p class="foot">Nothing here yet.</p>';
+else start();
+</script>
+</body>
+</html>
